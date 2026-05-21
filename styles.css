@@ -1,0 +1,520 @@
+/* ============================================================
+   Under The Stars — A Glamping Night
+   ============================================================ */
+
+:root {
+  --gold: #d6b37a;
+  --gold-soft: #e8cda0;
+  --gold-deep: #a07f4e;
+  --cream: #f3e6cf;
+  --ink: #0b0d10;
+  --ink-2: #14181d;
+  --line: rgba(214, 179, 122, 0.45);
+  --shadow: 0 30px 80px rgba(0, 0, 0, 0.55);
+  --serif: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+  --sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+img, video { display: block; max-width: 100%; }
+
+/* ============================================================
+   1) CINEMATIC INTRO
+   ============================================================ */
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: #000;
+  opacity: 1;
+  transition: opacity 1.2s ease;
+}
+
+.intro.is-leaving { opacity: 0; pointer-events: none; }
+.intro.is-done    { display: none; }
+
+.intro-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Video clips are the intro — chairs first, then sofa.
+   Sequenced via JS by toggling .is-playing / .is-fading.
+   Capped at native resolution so low-res sources don't pixelate
+   on large screens; centered with black space around them.    */
+.hero-video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  max-width: 1280px;   /* cap upscaling on large monitors */
+  max-height: 720px;
+  object-fit: contain; /* preserve aspect, never crop */
+  opacity: 0;
+  transition: opacity 1.2s ease;
+  pointer-events: none;
+}
+
+.hero-video.is-playing { opacity: 1; }
+.hero-video.is-fading  { opacity: 0; }
+
+/* Soft vignette + warm gradient to focus the eye */
+.vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 55%, transparent 0%, transparent 35%, rgba(0,0,0,0.55) 80%, rgba(0,0,0,0.9) 100%),
+    linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 30%, transparent 60%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+}
+
+/* Title card */
+.intro-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  color: #fff;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.75);
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--sans);
+  text-transform: uppercase;
+  letter-spacing: 0.42em;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--gold-soft);
+  opacity: 0;
+  animation: fadeUp 1.4s ease 0.6s forwards;
+}
+
+.title {
+  margin: 18px 0 6px;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(48px, 9vw, 116px);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: #fff;
+  opacity: 0;
+  transform: translateY(14px);
+  animation: fadeUp 1.6s cubic-bezier(.2,.8,.2,1) 1.0s forwards;
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  font-family: var(--serif);
+  font-size: clamp(14px, 1.7vw, 20px);
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+  opacity: 0;
+  animation: fadeUp 1.4s ease 1.5s forwards;
+}
+
+.rule {
+  width: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+  animation: rule-grow 1.6s ease 0.9s forwards;
+}
+.rule.top    { margin-bottom: 22px; }
+.rule.bottom { margin-top: 22px; animation-delay: 1.6s; }
+
+@keyframes rule-grow { to { width: min(260px, 60vw); } }
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.skip-btn {
+  position: absolute;
+  right: calc(20px + env(safe-area-inset-right));
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  min-height: 44px;
+  padding: 12px 20px;
+  background: rgba(0,0,0,0.35);
+  color: var(--gold-soft);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font: 500 12px/1 var(--sans);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  animation: fadeUp 1.2s ease 2.5s forwards;
+  transition: background 0.25s ease, color 0.25s ease, transform 0.25s ease;
+}
+@media (hover: hover) {
+  .skip-btn:hover { background: rgba(0,0,0,0.6); color: #fff; transform: translateY(-1px); }
+}
+.skip-btn:active { transform: translateY(0); background: rgba(0,0,0,0.6); }
+
+/* ============================================================
+   2) RSVP PAGE
+   ============================================================ */
+
+.rsvp,
+.confirm {
+  min-height: 100vh;            /* fallback */
+  min-height: 100dvh;           /* dynamic viewport — handles mobile chrome */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding:
+    calc(48px + env(safe-area-inset-top))
+    calc(20px + env(safe-area-inset-right))
+    calc(48px + env(safe-area-inset-bottom))
+    calc(20px + env(safe-area-inset-left));
+  opacity: 0;
+  transition: opacity 1.4s ease;
+  pointer-events: none;
+}
+
+.rsvp.is-active,
+.confirm.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.rsvp-bg, .confirm-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+}
+.rsvp-bg img, .confirm-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.05);
+  filter: blur(2px) brightness(0.45) saturate(1.05);
+}
+.rsvp-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.85) 75%),
+    linear-gradient(180deg, rgba(11,13,16,0.65), rgba(11,13,16,0.9));
+}
+
+/* Card */
+.rsvp-card,
+.confirm-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 460px;
+  padding: 44px 36px 36px;
+  background: linear-gradient(180deg, rgba(20, 24, 29, 0.85), rgba(11, 13, 16, 0.92));
+  border: 1px solid rgba(214, 179, 122, 0.25);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transform: translateY(18px);
+  transition: transform 1s cubic-bezier(.2,.8,.2,1) 0.2s;
+}
+
+.rsvp.is-active .rsvp-card,
+.confirm.is-active .confirm-card {
+  transform: translateY(0);
+}
+
+.rsvp-card::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px solid rgba(214, 179, 122, 0.18);
+  border-radius: 14px;
+  pointer-events: none;
+}
+
+.card-header {
+  text-align: center;
+  margin-bottom: 22px;
+}
+.eyebrow.gold {
+  color: var(--gold);
+  opacity: 1;
+  animation: none;
+}
+.card-header h2 {
+  margin: 8px 0 4px;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(34px, 5.4vw, 46px);
+  line-height: 1;
+  color: #fff;
+}
+.tagline {
+  margin: 0;
+  font-family: var(--serif);
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--gold-soft);
+}
+
+/* Details */
+.details {
+  list-style: none;
+  margin: 22px 0 24px;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 18px 0;
+}
+.details li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--serif);
+  font-size: 17px;
+  color: var(--cream);
+  letter-spacing: 0.01em;
+}
+.details svg {
+  width: 20px;
+  height: 20px;
+  fill: var(--gold);
+  flex-shrink: 0;
+}
+
+/* Dress code */
+.dress-code {
+  text-align: center;
+  margin: 4px 0 22px;
+  padding: 16px 0 4px;
+}
+.dc-label {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.dc-title {
+  margin: 8px 0 4px;
+  font-family: var(--serif);
+  font-size: 24px;
+  color: #fff;
+}
+.dc-hint {
+  margin: 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  color: rgba(243, 230, 207, 0.7);
+}
+.swatches {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.swatches li {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.12), 0 2px 6px rgba(0,0,0,0.4);
+}
+
+/* Form */
+.rsvp-form { display: grid; gap: 14px; }
+.field { display: grid; gap: 6px; }
+.field label {
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--gold);
+  font-weight: 500;
+}
+.field input {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(214, 179, 122, 0.28);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-family: var(--serif);
+  font-size: 16px;
+  color: #fff;
+  outline: none;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+.field input::placeholder { color: rgba(243,230,207,0.4); }
+.field input:focus {
+  border-color: var(--gold);
+  background: rgba(255,255,255,0.07);
+  box-shadow: 0 0 0 4px rgba(214,179,122,0.12);
+}
+.field.has-error input { border-color: #c47171; }
+
+.submit-btn {
+  margin-top: 6px;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, var(--gold-soft), var(--gold));
+  color: #1a1410;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  box-shadow: 0 10px 30px rgba(214,179,122,0.18);
+}
+@media (hover: hover) {
+  .submit-btn:hover { transform: translateY(-1px); filter: brightness(1.05); box-shadow: 0 14px 36px rgba(214,179,122,0.28); }
+}
+.submit-btn:active { transform: translateY(0); filter: brightness(0.97); }
+
+.hint {
+  margin: 10px 0 0;
+  text-align: center;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  color: rgba(243,230,207,0.6);
+}
+
+/* ============================================================
+   3) CONFIRMATION
+   ============================================================ */
+
+.confirm-card {
+  text-align: center;
+  padding: 52px 36px 44px;
+}
+.check {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+  color: var(--gold);
+}
+.check svg { width: 100%; height: 100%; }
+.confirm-card h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-style: italic;
+  font-size: 30px;
+  color: #fff;
+  margin: 6px 0 14px;
+}
+.confirm-msg {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: rgba(243,230,207,0.78);
+  line-height: 1.55;
+  margin: 0 0 22px;
+}
+.signature {
+  font-family: var(--serif);
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: var(--gold);
+}
+
+/* ============================================================
+   4) RESPONSIVE
+   ============================================================ */
+
+/* Tablet / small laptop */
+@media (max-width: 720px) {
+  .rsvp, .confirm { padding-top: calc(28px + env(safe-area-inset-top));
+                    padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+}
+
+/* Phones */
+@media (max-width: 480px) {
+  .title    { font-size: clamp(44px, 13vw, 72px); }
+  .subtitle { letter-spacing: 0.32em; font-size: 12px; }
+  .eyebrow  { letter-spacing: 0.36em; }
+
+  .rsvp-card, .confirm-card {
+    padding: 32px 22px 26px;
+    border-radius: 14px;
+  }
+  .rsvp-card::before { inset: 5px; border-radius: 11px; }
+
+  .card-header h2 { font-size: clamp(30px, 8vw, 38px); }
+
+  .details        { margin: 18px 0 20px; padding: 14px 0; gap: 10px; }
+  .details li     { font-size: 15.5px; gap: 12px; }
+  .details svg    { width: 18px; height: 18px; }
+
+  .dress-code     { margin: 0 0 18px; padding-top: 12px; }
+  .dc-title       { font-size: 22px; }
+  .dc-hint        { font-size: 12px; }
+  .swatches li    { width: 16px; height: 16px; }
+
+  .field input    { padding: 13px 14px; }   /* keep ≥16px font to avoid iOS zoom */
+  .submit-btn     { padding: 15px 18px; }    /* generous tap target */
+
+  .confirm-card   { padding: 40px 24px 30px; }
+  .check          { width: 56px; height: 56px; }
+  .confirm-card h2 { font-size: 26px; }
+  .confirm-msg    { font-size: 15px; }
+}
+
+/* Very small phones */
+@media (max-width: 360px) {
+  .title          { font-size: 40px; }
+  .card-header h2 { font-size: 28px; }
+  .details li     { font-size: 15px; }
+  .rsvp-card, .confirm-card { padding: 28px 18px 22px; }
+}
+
+/* Landscape phones — keep intro readable on short viewports */
+@media (max-height: 480px) and (orientation: landscape) {
+  .title    { font-size: clamp(36px, 8vh, 64px); }
+  .rule     { margin: 10px 0; }
+  .rule.top, .rule.bottom { margin: 10px 0; }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .title, .subtitle, .eyebrow, .rule, .skip-btn { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .rule { width: min(260px, 60vw); }
+}

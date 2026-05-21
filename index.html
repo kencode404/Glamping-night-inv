@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0d10" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Under The Stars — A Glamping Night</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- CINEMATIC INTRO -->
+  <section id="intro" class="intro">
+    <div class="intro-stage">
+      <video class="hero-video chairs" src="assets/chairs assemble.mp4#t=2" muted playsinline webkit-playsinline="true" preload="auto"></video>
+      <video class="hero-video sofa" src="assets/sofa toss.mp4" muted playsinline webkit-playsinline="true" preload="auto"></video>
+      <div class="vignette"></div>
+
+      <div class="intro-text">
+        <div class="rule top"></div>
+        <p class="eyebrow">You're invited to</p>
+        <h1 class="title">Under The Stars</h1>
+        <p class="subtitle">— A Glamping Night —</p>
+        <div class="rule bottom"></div>
+      </div>
+
+      <button id="skipBtn" class="skip-btn" aria-label="Skip intro">Skip ›</button>
+    </div>
+  </section>
+
+  <!-- RSVP PAGE -->
+  <section id="rsvp" class="rsvp" aria-hidden="true">
+    <div class="rsvp-bg">
+      <img src="assets/Glamping night scene.png" alt="" aria-hidden="true" />
+      <div class="rsvp-overlay"></div>
+    </div>
+
+    <div class="rsvp-card">
+      <header class="card-header">
+        <p class="eyebrow gold">You're invited to</p>
+        <h2>Under The Stars</h2>
+        <p class="tagline">— A Glamping Night —</p>
+      </header>
+
+      <ul class="details">
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm-2 8h14v10H5V10zm2 2v2h2v-2H7zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2z"/></svg>
+          <span>Friday, July 25, 2025</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+          <span>The Rooftop, Bangunan Bei</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm.5-13H11v6l5.2 3.1.8-1.3-4.5-2.7z"/></svg>
+          <span>6:30 PM onwards</span>
+        </li>
+      </ul>
+
+      <div class="dress-code">
+        <p class="dc-label">Dress Code</p>
+        <p class="dc-title">Smart Casual</p>
+        <p class="dc-hint">Earth tones, denim &amp; cozy vibes</p>
+        <ul class="swatches" aria-hidden="true">
+          <li style="--c:#e8d9c0"></li>
+          <li style="--c:#c69f7b"></li>
+          <li style="--c:#9aa987"></li>
+          <li style="--c:#4b5b3f"></li>
+          <li style="--c:#3b5a78"></li>
+          <li style="--c:#a9663f"></li>
+        </ul>
+      </div>
+
+      <form id="rsvpForm" class="rsvp-form" novalidate>
+        <div class="field">
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" autocomplete="name" required />
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required />
+        </div>
+        <div class="field">
+          <label for="phone">Phone</label>
+          <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required />
+        </div>
+        <button type="submit" class="submit-btn">
+          <span>Reserve My Spot</span>
+        </button>
+        <p class="hint">Kindly RSVP by July 18, 2025</p>
+      </form>
+    </div>
+  </section>
+
+  <!-- CONFIRMATION -->
+  <section id="confirm" class="confirm" aria-hidden="true">
+    <div class="confirm-bg">
+      <img src="assets/Glamping night scene.png" alt="" aria-hidden="true" />
+      <div class="rsvp-overlay"></div>
+    </div>
+    <div class="confirm-card">
+      <div class="check">
+        <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M14 27l8 8 16-18"/></svg>
+      </div>
+      <p class="eyebrow gold">See you there</p>
+      <h2 id="confirmName">Your seat is saved.</h2>
+      <p class="confirm-msg">A reminder will find you closer to the night. Until then — keep looking up.</p>
+      <div class="signature">— Under The Stars —</div>
+    </div>
+  </section>
+
+  <script src="script.js"></script>
+</body>
+</html>
