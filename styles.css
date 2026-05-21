@@ -328,14 +328,26 @@ img, video { display: block; max-width: 100%; }
   inset: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  /* iOS-fix: stop scroll chaining at the boundaries (otherwise the
+     scroll gesture at the bottom gets eaten when iOS tries to scroll
+     the body, which doesn't scroll). touch-action: pan-y tells iOS
+     'this element handles vertical pans, don't intercept them for
+     system gestures'. Together these prevent the 'stuck at the
+     bottom, can't scroll back up' bug. */
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   display: flex;
   align-items: center;
   align-items: safe center;
   justify-content: center;
+  /* Bottom padding leaves clearance for the fixed 'Designed &
+     Developed by Ken' credit pill (~40px tall + 12px from edge),
+     so the last card / signature doesn't sit underneath it when
+     scrolled to the end. */
   padding:
     calc(48px + env(safe-area-inset-top))
     calc(20px + env(safe-area-inset-right))
-    calc(48px + env(safe-area-inset-bottom))
+    calc(140px + env(safe-area-inset-bottom))
     calc(20px + env(safe-area-inset-left));
   opacity: 0;
   transition: opacity 1.4s ease;
@@ -380,10 +392,12 @@ img, video { display: block; max-width: 100%; }
     linear-gradient(180deg, rgba(11,13,16,0.35), rgba(11,13,16,0.7));
 }
 
-/* Pin the detail-page background to the viewport so the scene stays
-   the constant backdrop as you scroll through the stacked cards.
-   Position:absolute inside an overflow:auto container can scroll out
-   of view on some browsers; fixed avoids that. */
+/* Pin BOTH the RSVP form bg and the detail-page bg to the viewport
+   so the scene stays the constant backdrop while only the card /
+   stacked cards scroll. Position:absolute inside an overflow:auto
+   container can scroll out of view; fixed locks it to the viewport. */
+.rsvp    .rsvp-bg,
+.rsvp    .rsvp-overlay,
 .confirm .confirm-bg,
 .confirm .rsvp-overlay {
   position: fixed;
@@ -408,6 +422,9 @@ img, video { display: block; max-width: 100%; }
   -webkit-backdrop-filter: blur(8px);
   transform: translateY(18px);
   transition: transform 1s cubic-bezier(.2,.8,.2,1) 0.2s;
+  /* Same belt-and-braces clearance for the credit pill as the
+     detail page signature — see comment on .details-signature. */
+  margin-bottom: 80px;
 }
 
 .rsvp.is-active .rsvp-card {
@@ -1064,6 +1081,7 @@ img, video { display: block; max-width: 100%; }
   transition: opacity 0.6s ease;
   pointer-events: none;
 }
+.rsvp.is-active    ~ .credit,
 .confirm.is-active ~ .credit {
   opacity: 1;
 }
@@ -1205,6 +1223,11 @@ img, video { display: block; max-width: 100%; }
   color: var(--gold);
   text-align: center;
   padding: 8px 8px 4px;
+  /* Belt-and-braces clearance for the fixed 'Designed & Developed
+     by Ken' credit pill: many browsers drop the padding-bottom of a
+     flex+overflow:auto container from scroll calculation, so we add
+     the margin on the last child directly. */
+  margin-bottom: 80px;
 }
 
 /* Staggered reveal: each top-level section fades up after .confirm becomes active */
