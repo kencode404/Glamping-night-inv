@@ -115,6 +115,17 @@
   let introStarted = false;
   let titleFadeTimer = null;
   let chairsPlayTimer = null;
+  let musicRevealed = false;
+
+  // Make the music audible. Idempotent so the chairs-reveal path and
+  // the skip path can both call it without double-fading.
+  function revealMusic() {
+    if (musicRevealed || !bgMusic) return;
+    musicRevealed = true;
+    // Re-issue play() defensively — no-op if it's already playing.
+    safePlay(bgMusic);
+    fadeInVolume(bgMusic, 0.4, 1500);
+  }
 
   // Title-card sequence timings (all from the gate tap):
   //   ~0.6s  eyebrow fades in
@@ -136,9 +147,19 @@
     // primeVideo also leaves muted=false so later plays have audio.
     primeVideo(chairsVid, 2);
     primeVideo(sofaVid, 0);
-    // Same trick for the background-music <audio> element so we can
-    // start it after the title card fades out without being blocked.
-    primeVideo(bgMusic, 0);
+    // Background music: iOS Safari is stricter with <audio> than
+    // <video>. The prime+pause trick doesn't reliably keep activation
+    // for audio elements, so instead we start the music NOW at
+    // volume 0 (synchronously inside the gesture) and just fade the
+    // volume up later. iOS sees a continuous, gesture-initiated
+    // play, so the deferred audible reveal isn't blocked.
+    if (bgMusic) {
+      try {
+        bgMusic.volume = 0;
+        const p = bgMusic.play();
+        if (p && p.catch) p.catch(() => {});
+      } catch (_) { /* swallow */ }
+    }
 
     // Dismiss the gate and arm the title-card animations
     beginGate.classList.add('is-dismissing');
@@ -151,14 +172,11 @@
     }, TITLE_REVEAL_MS + HOLD_MS);
 
     // Start the chairs video once the title has finished fading out,
-    // and fade in the looping background music alongside it.
+    // and reveal the (already-playing-at-volume-0) music alongside.
     chairsPlayTimer = setTimeout(() => {
       chairsVid.classList.add('is-playing');
       safePlay(chairsVid);
-      if (bgMusic) {
-        safePlay(bgMusic);
-        fadeInVolume(bgMusic, 0.4, 1800);
-      }
+      revealMusic();
     }, TITLE_REVEAL_MS + HOLD_MS + TITLE_FADE_MS);
 
     // Safety fallback — extended to cover the new title-card phase
@@ -178,6 +196,11 @@
     // start playing in the background after the intro has already faded).
     clearTimeout(titleFadeTimer);
     clearTimeout(chairsPlayTimer);
+
+    // If the user skipped before the chairs-reveal callback fired, the
+    // music is still silently playing at volume 0. Reveal it now so the
+    // RSVP form isn't silent.
+    revealMusic();
 
     // Fade audio in step with the visual fade so skipping isn't a hard cut
     fadeAudio(chairsVid, 900);
