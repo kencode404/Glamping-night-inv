@@ -86,13 +86,13 @@ img, video { display: block; max-width: 100%; }
 .hero-video.backdrop {
   max-width: none;
   max-height: none;
-  width: 110%;
-  height: 110%;
+  width: 115%;
+  height: 115%;
   object-fit: cover;
-  transform: translate(-50%, -50%) scale(1.1);
-  filter: blur(38px) brightness(0.55) saturate(1.15);
+  transform: translate(-50%, -50%) scale(1.15);
+  filter: blur(46px) brightness(0.85) saturate(1.25);
 }
-.hero-video.backdrop.is-playing { opacity: 0.55; }
+.hero-video.backdrop.is-playing { opacity: 1; }
 
 /* Skip the second decode on small / low-power devices */
 @media (max-width: 720px), (prefers-reduced-motion: reduce) {
