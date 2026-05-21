@@ -130,6 +130,10 @@ img, video { display: block; max-width: 100%; }
 }
 .intro-text.is-fading { opacity: 0; }
 
+/* Intro title-card elements stay hidden until JS adds .is-ready on .intro
+   (which happens when the user taps the begin gate). This guarantees the
+   "You're invited to / Rooftop Party 2026 / A Glamping Night" reveal
+   plays as a title card BEFORE the chairs video — not on top of it. */
 .eyebrow {
   margin: 0;
   font-family: var(--sans);
@@ -139,6 +143,8 @@ img, video { display: block; max-width: 100%; }
   font-weight: 400;
   color: var(--gold-soft);
   opacity: 0;
+}
+.intro.is-ready .eyebrow {
   animation: fadeUp 1.4s ease 0.6s forwards;
 }
 
@@ -153,6 +159,8 @@ img, video { display: block; max-width: 100%; }
   color: #fff;
   opacity: 0;
   transform: translateY(14px);
+}
+.intro.is-ready .title {
   animation: fadeUp 1.6s cubic-bezier(.2,.8,.2,1) 1.0s forwards;
 }
 
@@ -164,6 +172,8 @@ img, video { display: block; max-width: 100%; }
   text-transform: uppercase;
   color: var(--gold-soft);
   opacity: 0;
+}
+.intro.is-ready .subtitle {
   animation: fadeUp 1.4s ease 1.5s forwards;
 }
 
@@ -171,10 +181,13 @@ img, video { display: block; max-width: 100%; }
   width: 0;
   height: 1px;
   background: linear-gradient(to right, transparent, var(--gold), transparent);
+}
+.intro.is-ready .rule {
   animation: rule-grow 1.6s ease 0.9s forwards;
 }
 .rule.top    { margin-bottom: 22px; }
-.rule.bottom { margin-top: 22px; animation-delay: 1.6s; }
+.rule.bottom { margin-top: 22px; }
+.intro.is-ready .rule.bottom { animation-delay: 1.6s; }
 
 @keyframes rule-grow { to { width: min(260px, 60vw); } }
 
@@ -658,7 +671,9 @@ img, video { display: block; max-width: 100%; }
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 22px;
-    align-items: start;
+    /* stretch so The Evening and Programme cards share the same
+       bottom edge (their heights would otherwise differ). */
+    align-items: stretch;
   }
   /* Cards that should span both columns */
   .detail-page > .hero,
@@ -666,6 +681,17 @@ img, video { display: block; max-width: 100%; }
   .detail-page > .guests-card,
   .detail-page > .details-signature {
     grid-column: 1 / -1;
+  }
+  /* Side-by-side info-cards flex internally so the shorter card's
+     rows distribute vertically across the matched height instead of
+     leaving empty space at the bottom. */
+  .detail-page > .info-card:not(.dresscode-card):not(.guests-card) {
+    display: flex;
+    flex-direction: column;
+  }
+  .detail-page > .info-card:not(.dresscode-card):not(.guests-card) > .detail-list {
+    flex: 1;
+    align-content: space-around;
   }
   .hero { padding: 18px 24px 8px; }
   .hero h2 { font-size: clamp(32px, 3.4vw, 40px); }
@@ -976,6 +1002,40 @@ img, video { display: block; max-width: 100%; }
 @keyframes guest-in {
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Subtle pill below the guest list to download the full attendees CSV */
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 18px auto 0;
+  padding: 9px 18px 9px 14px;
+  background: rgba(214,179,122,0.08);
+  border: 1px solid rgba(214,179,122,0.35);
+  border-radius: 999px;
+  color: var(--gold-soft);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  /* Place it as a block centered under the list */
+  align-self: center;
+}
+.guests-card { display: flex; flex-direction: column; align-items: stretch; }
+@media (hover: hover) {
+  .download-btn:hover {
+    background: rgba(214,179,122,0.18);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+}
+.download-btn:active { transform: translateY(0); }
+.download-btn svg { display: block; }
 
 /* Friendly placeholder shown only when the database is genuinely empty */
 .guest-list-empty {

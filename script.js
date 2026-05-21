@@ -78,6 +78,20 @@
   // introTimer / skip handlers are armed only once the tap fires.
   let introTimer = null;
   let introStarted = false;
+  let titleFadeTimer = null;
+  let chairsPlayTimer = null;
+
+  // Title-card sequence timings (all from the gate tap):
+  //   ~0.6s  eyebrow fades in
+  //   ~1.0s  title fades in
+  //   ~1.5s  subtitle fades in
+  //   ~2.9s  title fully revealed
+  //   +HOLD_MS hold
+  //   +TITLE_FADE_MS fade out, then chairs video plays with sound
+  const TITLE_REVEAL_MS = 2900;
+  const HOLD_MS         = 700;
+  const TITLE_FADE_MS   = 800;
+
   function beginIntro() {
     if (introStarted) return;
     introStarted = true;
@@ -86,18 +100,24 @@
     try { chairsVid.muted = false; } catch (_) {}
     try { sofaVid.muted = false; } catch (_) {}
 
-    // Dismiss the gate
+    // Dismiss the gate and arm the title-card animations
     beginGate.classList.add('is-dismissing');
     setTimeout(() => beginGate.classList.add('is-done'), 1000);
+    intro.classList.add('is-ready');
 
-    // Kick off chairs (short delay so the gate has begun fading)
-    setTimeout(() => {
+    // After the title card reveals + holds, fade it out
+    titleFadeTimer = setTimeout(() => {
+      if (introText) introText.classList.add('is-fading');
+    }, TITLE_REVEAL_MS + HOLD_MS);
+
+    // Start the chairs video once the title has finished fading out
+    chairsPlayTimer = setTimeout(() => {
       chairsVid.classList.add('is-playing');
       safePlay(chairsVid);
-    }, 500);
+    }, TITLE_REVEAL_MS + HOLD_MS + TITLE_FADE_MS);
 
-    // Safety fallback if video events never fire
-    introTimer = setTimeout(endIntro, SAFETY_MS);
+    // Safety fallback — extended to cover the new title-card phase
+    introTimer = setTimeout(endIntro, SAFETY_MS + 5000);
   }
 
   beginGate.addEventListener('click', beginIntro);
@@ -107,6 +127,12 @@
     intro.classList.add('is-leaving');
     rsvp.classList.add('is-active');
     rsvp.setAttribute('aria-hidden', 'false');
+
+    // Cancel any pending title-card → video transitions in case the user
+    // skipped during the title card (otherwise the chairs video would
+    // start playing in the background after the intro has already faded).
+    clearTimeout(titleFadeTimer);
+    clearTimeout(chairsPlayTimer);
 
     // Fade audio in step with the visual fade so skipping isn't a hard cut
     fadeAudio(chairsVid, 900);
