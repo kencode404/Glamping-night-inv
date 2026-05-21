@@ -9,23 +9,19 @@
   const skipBtn    = document.getElementById('skipBtn');
   const beginGate  = document.getElementById('beginGate');
   const form       = document.getElementById('rsvpForm');
-  const chairsVid  = document.querySelector('.hero-video.chairs');
-  const sofaVid    = document.querySelector('.hero-video.sofa');
+  const introVid   = document.querySelector('.hero-video.intro-video');
   const introText  = document.querySelector('.intro-text');
   const bgMusic    = document.getElementById('bgMusic');
 
   /* ---------- 1) Cinematic intro sequencing ----------
-     Chairs assemble plays first (starting from its 2s mark via
-     the #t=2 URL fragment); when it nears the end, sofa toss
-     crossfades in.                                              */
+     Gate tap → music starts → title card reveals + fades →
+     muted intro video plays → video ends → endIntro. */
 
   const safePlay = (v) => v && v.play().catch(() => { /* swallow */ });
 
   // Mobile browsers (iOS Safari in particular) require each <video>
-  // element to be "activated" inside a user gesture before play() will
-  // work later. Calling play()+pause() during the gate tap primes the
-  // element so a deferred play() — like sofa starting 14s later —
-  // doesn't get blocked. We play muted to avoid an audible blip.
+  // to be "activated" inside a user gesture before a later play()
+  // (off-gesture) will work. play()+pause() in the gate handler primes it.
   function primeVideo(video, startAt) {
     if (!video) return;
     try {
@@ -35,27 +31,14 @@
         p.then(() => {
           try { video.pause(); } catch (_) {}
           try { video.currentTime = startAt || 0; } catch (_) {}
-          video.muted = false;
-        }).catch(() => { video.muted = false; });
+        }).catch(() => {});
       }
     } catch (_) { /* swallow */ }
   }
 
-  // Linear volume ramp to 0. No-op if muted or already silent.
-  const fadeAudio = (video, durationMs) => {
-    if (!video || video.muted || video.volume === 0) return;
-    const start = video.volume;
-    const t0 = performance.now();
-    const step = (now) => {
-      const p = Math.min(1, (now - t0) / durationMs);
-      try { video.volume = start * (1 - p); } catch (_) {}
-      if (p < 1) requestAnimationFrame(step);
-    };
-    requestAnimationFrame(step);
-  };
-
-  // Linear ramp UP from 0 → target volume. Used for the background
-  // music so it fades in instead of slamming on at full level.
+  // Linear ramp UP from 0 → target volume. No-op on iOS where the
+  // .volume property is read-only — there the music just plays at
+  // user system volume.
   const fadeInVolume = (media, target, durationMs) => {
     if (!media) return;
     try { media.volume = 0; } catch (_) {}
@@ -68,68 +51,21 @@
     requestAnimationFrame(step);
   };
 
-  const CROSSFADE_SEC      = 0.9;   // seconds before chairs ends → start sofa
-  const SOFA_AUDIO_FADE_SEC = 1.5;  // audio fade-out at sofa's natural end
-  const HOLD_AFTER_SOFA    = 900;   // ms to linger on the title after sofa ends
-  const SAFETY_MS          = 14000; // hard fallback if video events never fire
+  const HOLD_AFTER_VIDEO = 900;   // ms to linger after the video ends
+  const SAFETY_MS        = 30000; // hard fallback if the video never ends
 
-  // Crossfade chairs → sofa when chairs nears the end
-  let sofaStarted = false;
-  const startSofa = () => {
-    if (sofaStarted) return;
-    sofaStarted = true;
-    fadeAudio(chairsVid, CROSSFADE_SEC * 1000); // duck chairs audio under sofa
-    if (introText) introText.classList.add('is-fading'); // hide 'Rooftop Party 2026' before sofa
-    sofaVid.classList.add('is-playing');
-    safePlay(sofaVid);
-    chairsVid.classList.remove('is-playing');
-    chairsVid.classList.add('is-fading');
-  };
-
-  chairsVid.addEventListener('timeupdate', () => {
-    const d = chairsVid.duration;
-    if (!isFinite(d) || d <= 0) return;
-    if (chairsVid.currentTime >= d - CROSSFADE_SEC) startSofa();
-  });
-  chairsVid.addEventListener('ended', startSofa); // belt-and-braces
-
-  // Fade sofa audio in the last SOFA_AUDIO_FADE_SEC of its natural play
-  let sofaAudioFaded = false;
-  sofaVid.addEventListener('timeupdate', () => {
-    if (sofaAudioFaded) return;
-    const d = sofaVid.duration;
-    if (!isFinite(d) || d <= 0) return;
-    if (sofaVid.currentTime >= d - SOFA_AUDIO_FADE_SEC) {
-      sofaAudioFaded = true;
-      fadeAudio(sofaVid, SOFA_AUDIO_FADE_SEC * 1000);
-    }
+  // Single video — no crossfade, no sofa, just play until ended.
+  introVid.addEventListener('ended', () => {
+    setTimeout(endIntro, HOLD_AFTER_VIDEO);
   });
 
-  sofaVid.addEventListener('ended', () => {
-    setTimeout(endIntro, HOLD_AFTER_SOFA);
-  });
-
-  // Intro is gated by the user tap so videos can play with sound.
-  // introTimer / skip handlers are armed only once the tap fires.
-  let introTimer = null;
-  let introStarted = false;
-  let titleFadeTimer = null;
-  let chairsPlayTimer = null;
-  let musicRevealed = false;
-  let musicShouldPlay = false;
-
-  // Make the music audible. Idempotent so the chairs-reveal path and
-  // the skip path can both call it without double-fading.
-  function revealMusic() {
-    if (musicRevealed || !bgMusic) return;
-    musicRevealed = true;
-    // Re-issue play() defensively — no-op if it's already playing.
-    safePlay(bgMusic);
-    // Unmute (the iOS-respected switch) AND ramp volume up for
-    // non-iOS browsers where the property is honored.
-    try { bgMusic.muted = false; } catch (_) {}
-    fadeInVolume(bgMusic, 0.4, 1500);
-  }
+  // Intro is gated by the user tap so the video can play (mobile) and
+  // the music can start (autoplay policy).
+  let introTimer       = null;
+  let introStarted     = false;
+  let titleFadeTimer   = null;
+  let videoPlayTimer   = null;
+  let musicShouldPlay  = false;
 
   // Title-card sequence timings (all from the gate tap):
   //   ~0.6s  eyebrow fades in
@@ -137,7 +73,7 @@
   //   ~1.5s  subtitle fades in
   //   ~2.9s  title fully revealed
   //   +HOLD_MS hold
-  //   +TITLE_FADE_MS fade out, then chairs video plays with sound
+  //   +TITLE_FADE_MS fade out, then video plays
   const TITLE_REVEAL_MS = 2900;
   const HOLD_MS         = 700;
   const TITLE_FADE_MS   = 800;
@@ -146,34 +82,29 @@
     if (introStarted) return;
     introStarted = true;
 
-    // Prime BOTH videos inside the same user gesture so the sofa
-    // play() — fired ~14s later — isn't blocked by mobile browsers.
-    // primeVideo also leaves muted=false so later plays have audio.
-    primeVideo(chairsVid, 2);
-    primeVideo(sofaVid, 0);
-    // Background music: start it muted RIGHT NOW (inside the user
-    // gesture) so iOS Safari permits it. It stays muted through the
-    // entire video phase — no overlap with the video audio — and gets
-    // unmuted later in endIntro (natural sofa end or skip).
-    //
-    // iOS quirks handled:
-    //   - audio.volume is read-only on iOS, so we use audio.muted
-    //     instead to switch between silent and audible.
-    //   - iOS may suspend the audio element when sibling <video>
-    //     elements pause. The 'pause' listener auto-resumes it so
-    //     the audio is still alive (just muted) when we unmute later.
+    // Prime the (muted) intro video so a later play() works on mobile.
+    primeVideo(introVid, 0);
+
+    // Music plays continuously from the gate tap all the way through
+    // the title card, video, RSVP form, and detail page. Start it
+    // synchronously inside the user gesture so mobile browsers permit
+    // it. The fadeInVolume call ramps the volume up on browsers that
+    // respect .volume; on iOS (read-only volume) the music just plays
+    // at user system level.
     if (bgMusic) {
       try {
-        bgMusic.muted = true;
+        bgMusic.muted = false;
         const p = bgMusic.play();
         if (p && p.catch) p.catch(() => {});
+        fadeInVolume(bgMusic, 0.4, 1500);
       } catch (_) { /* swallow */ }
 
       musicShouldPlay = true;
 
+      // Auto-resume if iOS suspends the audio behind our back
+      // (sometimes happens when sibling <video> pauses).
       bgMusic.addEventListener('pause', () => {
         if (!musicShouldPlay) return;
-        // Defer one tick so we don't race a legitimate pause.
         setTimeout(() => {
           if (musicShouldPlay && bgMusic.paused) safePlay(bgMusic);
         }, 50);
@@ -190,17 +121,14 @@
       if (introText) introText.classList.add('is-fading');
     }, TITLE_REVEAL_MS + HOLD_MS);
 
-    // Start the chairs video once the title has finished fading out.
-    // Music does NOT reveal here — it stays muted through the whole
-    // video phase and only becomes audible at endIntro (natural sofa
-    // end or skip), so it never overlaps with the video audio.
-    chairsPlayTimer = setTimeout(() => {
-      chairsVid.classList.add('is-playing');
-      safePlay(chairsVid);
+    // Start the intro video once the title has finished fading.
+    videoPlayTimer = setTimeout(() => {
+      introVid.classList.add('is-playing');
+      safePlay(introVid);
     }, TITLE_REVEAL_MS + HOLD_MS + TITLE_FADE_MS);
 
-    // Safety fallback — extended to cover the new title-card phase
-    introTimer = setTimeout(endIntro, SAFETY_MS + 5000);
+    // Safety fallback in case the 'ended' event never fires
+    introTimer = setTimeout(endIntro, SAFETY_MS);
   }
 
   beginGate.addEventListener('click', beginIntro);
@@ -211,37 +139,24 @@
     rsvp.classList.add('is-active');
     rsvp.setAttribute('aria-hidden', 'false');
 
-    // Cancel any pending title-card → video transitions in case the user
-    // skipped during the title card (otherwise the chairs video would
-    // start playing in the background after the intro has already faded).
+    // Cancel pending transitions if the user skipped during the title
+    // card (otherwise the video would start playing in the background).
     clearTimeout(titleFadeTimer);
-    clearTimeout(chairsPlayTimer);
-
-    // If the user skipped before the chairs-reveal callback fired, the
-    // music is still silently playing at volume 0. Reveal it now so the
-    // RSVP form isn't silent.
-    revealMusic();
-
-    // Fade audio in step with the visual fade so skipping isn't a hard cut
-    fadeAudio(chairsVid, 900);
-    fadeAudio(sofaVid, 900);
+    clearTimeout(videoPlayTimer);
+    clearTimeout(introTimer);
 
     // After fade, remove from layout
     setTimeout(() => intro.classList.add('is-done'), 1300);
 
-    // Pause videos to save battery, then ensure music is still going.
-    // iOS often suspends the audio element when other media pauses,
-    // so we re-issue play() right after the videos stop.
+    // Pause the video to save battery; ensure the music keeps going
+    // (iOS may otherwise suspend it when the video pauses).
     setTimeout(() => {
-      [chairsVid, sofaVid].forEach((v) => { try { v.pause(); } catch (_) {} });
-      if (musicRevealed) safePlay(bgMusic);
+      try { introVid.pause(); } catch (_) {}
+      if (musicShouldPlay) safePlay(bgMusic);
     }, 1400);
   }
 
-  skipBtn.addEventListener('click', () => {
-    clearTimeout(introTimer);
-    endIntro();
-  });
+  skipBtn.addEventListener('click', endIntro);
 
   /* ---------- 2) RSVP form + page switching ---------- */
 
