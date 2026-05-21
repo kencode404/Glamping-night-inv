@@ -788,6 +788,37 @@ img, video { display: block; max-width: 100%; }
   margin-top: 2px;
 }
 
+/* Live countdown to the event, rendered as <num>d <num>h <num>m <num>s.
+   Tabular numerals keep the digits from jittering as the seconds tick. */
+.countdown {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: rgba(214,179,122,0.75);
+}
+.countdown .num {
+  color: #fff;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  margin-right: 3px;
+}
+.countdown .unit {
+  text-transform: uppercase;
+  font-size: 9.5px;
+  margin-right: 10px;
+}
+.countdown .unit:last-child { margin-right: 0; }
+.countdown .ready {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--gold);
+  text-transform: none;
+}
+
 /* Programme card: schedule (time + event) + activities (icon + label) */
 .schedule {
   list-style: none;
@@ -1005,6 +1036,36 @@ img, video { display: block; max-width: 100%; }
 }
 @keyframes guest-in {
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* 'Designed & Developed by Ken' credit, pinned to the bottom-left
+   of the viewport. Hidden during the intro so it doesn't compete
+   with the title card / video; fades in once the user reaches the
+   RSVP form, stays through the detail page. Sits on a subtle dark
+   pill so it reads against any background variant of the bg image. */
+.credit {
+  position: fixed;
+  left: calc(14px + env(safe-area-inset-left));
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 50;
+  padding: 6px 12px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  color: var(--gold-soft);
+  background: rgba(11,13,16,0.55);
+  border: 1px solid rgba(214,179,122,0.25);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+.confirm.is-active ~ .credit {
+  opacity: 1;
 }
 
 /* "Already reserved" modal, shown when the API returns 409 on submit.

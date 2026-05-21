@@ -64,7 +64,10 @@
       <ul class="details">
         <li>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm-2 8h14v10H5V10zm2 2v2h2v-2H7zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2z"/></svg>
-          <span>Saturday, July 25, 2025</span>
+          <div>
+            <span>Saturday, July 25, 2026</span>
+            <span class="countdown" data-countdown aria-live="off"></span>
+          </div>
         </li>
         <li>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
@@ -106,7 +109,7 @@
         <button type="submit" class="submit-btn">
           <span>Reserve My Spot</span>
         </button>
-        <p class="hint">Kindly RSVP by July 18, 2025</p>
+        <p class="hint">Kindly RSVP by 13th June 2026</p>
         <button type="button" id="viewDetailsBtn" class="ghost-link">View event details →</button>
       </form>
     </div>
@@ -141,7 +144,10 @@
         <ul class="detail-list">
           <li>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm-2 8h14v10H5V10zm2 2v2h2v-2H7zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2z"/></svg>
-            <div><strong>Saturday, July 25, 2025</strong><span class="sub">Mark your calendar</span></div>
+            <div>
+              <strong>Saturday, July 25, 2026</strong>
+              <span class="countdown" data-countdown aria-live="off"></span>
+            </div>
           </li>
           <li>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
@@ -222,6 +228,8 @@
   <!-- Background music: starts when the chairs video reveals, loops
        throughout the RSVP form and detail page. JS controls play. -->
   <audio id="bgMusic" src="assets/stargazing-piano-instrumental.mp3" loop preload="auto"></audio>
+
+  <small class="credit">Designed &amp; Developed by Ken</small>
 
   <!-- Shown when the user tries to RSVP with a name or phone that's
        already in the database. OK button drops them into the detail page. -->

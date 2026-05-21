@@ -449,4 +449,34 @@
       input.closest('.field').classList.remove('has-error');
     });
   });
+
+  /* ---------- 4) Live countdown to the event ----------
+     Ticks every second. Local time interpretation — fine since the
+     guests are in the same timezone as the rooftop venue. */
+
+  const EVENT_DATE = new Date('2026-07-25T18:30:00');
+
+  function updateCountdown() {
+    const els = document.querySelectorAll('[data-countdown]');
+    if (!els.length) return;
+    const diff = EVENT_DATE.getTime() - Date.now();
+    let html;
+    if (diff <= 0) {
+      html = '<span class="ready">It’s tonight — see you up there.</span>';
+    } else {
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      html =
+        `<span class="num">${d}</span><span class="unit">d</span>` +
+        `<span class="num">${h}</span><span class="unit">h</span>` +
+        `<span class="num">${m}</span><span class="unit">m</span>` +
+        `<span class="num">${String(s).padStart(2, '0')}</span><span class="unit">s</span>`;
+    }
+    els.forEach((el) => { el.innerHTML = html; });
+  }
+
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
 })();
