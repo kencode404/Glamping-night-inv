@@ -10,6 +10,12 @@
   const form       = document.getElementById('rsvpForm');
   const chairsVid  = document.querySelector('.hero-video.chairs');
   const sofaVid    = document.querySelector('.hero-video.sofa');
+  const chairsBg   = document.querySelector('.hero-video.chairs-bg');
+  const sofaBg     = document.querySelector('.hero-video.sofa-bg');
+
+  // Sharp + blurred-backdrop pair, kept in lockstep
+  const chairsPair = [chairsVid, chairsBg].filter(Boolean);
+  const sofaPair   = [sofaVid, sofaBg].filter(Boolean);
 
   /* ---------- 1) Cinematic intro sequencing ----------
      Chairs assemble plays first (starting from its 2s mark via
@@ -24,8 +30,7 @@
 
   // Kick off chairs once title eyebrow has appeared
   setTimeout(() => {
-    chairsVid.classList.add('is-playing');
-    safePlay(chairsVid);
+    chairsPair.forEach((v) => { v.classList.add('is-playing'); safePlay(v); });
   }, 900);
 
   // Crossfade chairs → sofa when chairs nears the end
@@ -33,11 +38,8 @@
   const startSofa = () => {
     if (sofaStarted) return;
     sofaStarted = true;
-    sofaVid.classList.add('is-playing');
-    safePlay(sofaVid);
-    // Fade chairs out as sofa fades in
-    chairsVid.classList.remove('is-playing');
-    chairsVid.classList.add('is-fading');
+    sofaPair.forEach((v)   => { v.classList.add('is-playing'); safePlay(v); });
+    chairsPair.forEach((v) => { v.classList.remove('is-playing'); v.classList.add('is-fading'); });
   };
 
   chairsVid.addEventListener('timeupdate', () => {
@@ -64,7 +66,7 @@
 
     // Pause videos to save battery
     setTimeout(() => {
-      [chairsVid, sofaVid].forEach((v) => { try { v.pause(); } catch (_) {} });
+      [...chairsPair, ...sofaPair].forEach((v) => { try { v.pause(); } catch (_) {} });
     }, 1400);
   }
 

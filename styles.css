@@ -80,6 +80,25 @@ img, video { display: block; max-width: 100%; }
 .hero-video.is-playing { opacity: 1; }
 .hero-video.is-fading  { opacity: 0; }
 
+/* Ambient backdrop: same clip, scaled to fill, heavily blurred & dimmed.
+   Sits behind the sharp video (declared earlier in DOM) so the letterboxed
+   area shows soft moving color that matches the scene. */
+.hero-video.backdrop {
+  max-width: none;
+  max-height: none;
+  width: 110%;
+  height: 110%;
+  object-fit: cover;
+  transform: translate(-50%, -50%) scale(1.1);
+  filter: blur(38px) brightness(0.55) saturate(1.15);
+}
+.hero-video.backdrop.is-playing { opacity: 0.55; }
+
+/* Skip the second decode on small / low-power devices */
+@media (max-width: 720px), (prefers-reduced-motion: reduce) {
+  .hero-video.backdrop { display: none; }
+}
+
 /* Soft vignette + warm gradient to focus the eye */
 .vignette {
   position: absolute;
