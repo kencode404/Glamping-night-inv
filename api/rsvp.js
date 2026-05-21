@@ -47,6 +47,26 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'Name and phone are required' });
       }
 
+      // Duplicate guard. Two cheap queries instead of one OR query so
+      // we don't have to URL-encode special characters in user input
+      // through PostgREST's .or() filter syntax. Name is matched
+      // case-insensitively; phone is exact (people type their own
+      // number consistently).
+      const [byName, byPhone] = await Promise.all([
+        supabase.from('rsvps').select('name').ilike('name', name).limit(1),
+        supabase.from('rsvps').select('phone').eq('phone', phone).limit(1),
+      ]);
+      const nameHit  = byName.data && byName.data.length > 0;
+      const phoneHit = byPhone.data && byPhone.data.length > 0;
+      if (nameHit || phoneHit) {
+        const guests = await listGuests();
+        return res.status(409).json({
+          error: 'Already reserved',
+          matchedOn: nameHit && phoneHit ? 'both' : (nameHit ? 'name' : 'phone'),
+          guests,
+        });
+      }
+
       const { error: insertErr } = await supabase
         .from('rsvps')
         .insert({ name, phone, food_allergy: allergy });

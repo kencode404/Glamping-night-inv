@@ -287,13 +287,22 @@
     // static dev, network drop), we still proceed with the detail page
     // using a local-only fallback so the user sees confirmation.
     let serverGuests = null;
+    let duplicate    = false;
     try {
       const resp = await fetch('/api/rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-      if (resp.ok) {
+      if (resp.status === 409) {
+        // Already in the DB. Use the list returned with the 409 so the
+        // detail page still shows the real shared list.
+        duplicate = true;
+        try {
+          const json = await resp.json();
+          if (Array.isArray(json.guests)) serverGuests = json.guests;
+        } catch (_) {}
+      } else if (resp.ok) {
         const json = await resp.json();
         if (Array.isArray(json.guests)) serverGuests = json.guests;
       }
@@ -309,8 +318,35 @@
     submitBtn.disabled = false;
     submitBtn.innerHTML = originalLabel;
 
-    showDetailPage(data.name, serverGuests);
+    if (duplicate) {
+      showDuplicateDialog(() => showDetailPage(data.name, serverGuests));
+    } else {
+      showDetailPage(data.name, serverGuests);
+    }
   });
+
+  // Open the themed "already reserved" dialog. Calls onOk when the
+  // user clicks the OK button (closes the dialog first).
+  function showDuplicateDialog(onOk) {
+    const dialog = document.getElementById('dupDialog');
+    if (!dialog) {
+      // Element missing for any reason — fall back to native alert
+      // and run the callback so the flow doesn't stall.
+      try { window.alert("You're already on the list. We'll take you to the details now."); } catch (_) {}
+      if (onOk) onOk();
+      return;
+    }
+    const okBtn = dialog.querySelector('.dialog-ok');
+    dialog.classList.add('is-open');
+    dialog.setAttribute('aria-hidden', 'false');
+    const close = () => {
+      dialog.classList.remove('is-open');
+      dialog.setAttribute('aria-hidden', 'true');
+      okBtn.removeEventListener('click', close);
+      if (onOk) onOk();
+    };
+    okBtn.addEventListener('click', close);
+  }
 
   /* ---------- 3) Guest list ----------
      Source-of-truth is the /api/rsvp endpoint (Upstash Redis on Vercel).

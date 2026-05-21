@@ -56,8 +56,8 @@
 
     <div class="rsvp-card">
       <header class="card-header">
-        <p class="eyebrow gold">You're invited to</p>
-        <h2>Rooftop Party 2026</h2>
+        <p class="eyebrow gold">Rooftop Party 2026</p>
+        <h2>Under The Lights</h2>
         <p class="tagline">— A Glamping Night —</p>
       </header>
 
@@ -222,6 +222,17 @@
   <!-- Background music: starts when the chairs video reveals, loops
        throughout the RSVP form and detail page. JS controls play. -->
   <audio id="bgMusic" src="assets/stargazing-piano-instrumental.mp3" loop preload="auto"></audio>
+
+  <!-- Shown when the user tries to RSVP with a name or phone that's
+       already in the database. OK button drops them into the detail page. -->
+  <div id="dupDialog" class="dialog" aria-hidden="true" role="dialog" aria-labelledby="dupTitle" aria-describedby="dupMsg">
+    <div class="dialog-content">
+      <p class="dialog-eyebrow">A note</p>
+      <h3 id="dupTitle">You're already on the list</h3>
+      <p id="dupMsg" class="dialog-msg">We've got your spot saved. Click OK to see the details.</p>
+      <button type="button" class="dialog-ok">OK</button>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>

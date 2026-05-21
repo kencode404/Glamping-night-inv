@@ -315,7 +315,13 @@ img, video { display: block; max-width: 100%; }
    they don't stack in the document flow (which previously left a
    black first-viewport when the detail page activated below). Each
    handles its own internal scrolling if content is taller than the
-   screen. */
+   screen.
+
+   align-items: safe center — centers the card when it fits, but
+   gracefully falls back to flex-start when content overflows the
+   viewport (so the card top never gets pushed off-screen). The
+   plain 'center' line is the fallback for browsers that don't
+   parse the 'safe' keyword (mostly pre-2022). */
 .rsvp,
 .confirm {
   position: fixed;
@@ -324,6 +330,7 @@ img, video { display: block; max-width: 100%; }
   -webkit-overflow-scrolling: touch;
   display: flex;
   align-items: center;
+  align-items: safe center;
   justify-content: center;
   padding:
     calc(48px + env(safe-area-inset-top))
@@ -646,16 +653,9 @@ img, video { display: block; max-width: 100%; }
    3) DETAIL PAGE (post-RSVP)
    ============================================================ */
 
-/* Detail page is tall — align top so content scrolls naturally on phones */
-.confirm { align-items: flex-start; }
-
-/* On phones, the RSVP card is also taller than the viewport (header +
-   details + dress code + 3 fields + button + hint). Centering it
-   pushes the top off-screen. Pin to the top with padding for breathing
-   room. Desktop keeps the centered look since the card fits there. */
-@media (max-width: 759px) {
-  .rsvp { align-items: flex-start; }
-}
+/* Detail page is always taller than the viewport, so safe center
+   above degrades to top-aligned automatically. No extra override
+   needed. */
 
 .detail-page {
   position: relative;
@@ -1006,6 +1006,88 @@ img, video { display: block; max-width: 100%; }
 @keyframes guest-in {
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* "Already reserved" modal, shown when the API returns 409 on submit.
+   Sits above every other layer; the OK button closes it and drops the
+   user into the detail page. */
+.dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.dialog.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.dialog-content {
+  width: 100%;
+  max-width: 380px;
+  padding: 32px 28px 26px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(20,24,29,0.95), rgba(11,13,16,0.98));
+  border: 1px solid rgba(214,179,122,0.3);
+  border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+  transform: translateY(14px) scale(0.96);
+  transition: transform 0.45s cubic-bezier(.2,.8,.2,1);
+}
+.dialog.is-open .dialog-content {
+  transform: translateY(0) scale(1);
+}
+.dialog-eyebrow {
+  margin: 0 0 6px;
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.dialog h3 {
+  margin: 0 0 12px;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-style: italic;
+  font-size: 26px;
+  line-height: 1.15;
+  color: #fff;
+}
+.dialog-msg {
+  margin: 0 0 22px;
+  font-family: var(--serif);
+  font-size: 15px;
+  line-height: 1.55;
+  color: rgba(243,230,207,0.8);
+}
+.dialog-ok {
+  padding: 12px 38px;
+  background: linear-gradient(180deg, var(--gold-soft), var(--gold));
+  color: #1a1410;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 10px 30px rgba(214,179,122,0.2);
+}
+@media (hover: hover) {
+  .dialog-ok:hover { transform: translateY(-1px); filter: brightness(1.05); }
+}
+.dialog-ok:active { transform: translateY(0); filter: brightness(0.97); }
 
 /* Subtle pill below the guest list to download the full attendees CSV */
 .download-btn {
