@@ -126,9 +126,77 @@
     endIntro();
   });
 
-  /* ---------- 2) RSVP form ---------- */
+  /* ---------- 2) RSVP form + page switching ---------- */
 
   const phoneRe = /^[+\d][\d\s\-()]{6,}$/;
+
+  const viewDetailsBtn = document.getElementById('viewDetailsBtn');
+  const backToRsvpBtn  = document.getElementById('backToRsvpBtn');
+  const confirmName    = document.getElementById('confirmName');
+
+  // Fetch the public guest list from the API (returns null on failure).
+  async function fetchGuestList() {
+    try {
+      const resp = await fetch('/api/rsvp', { method: 'GET' });
+      if (!resp.ok) return null;
+      const json = await resp.json();
+      return Array.isArray(json.guests) ? json.guests : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // Switch from the RSVP form to the detail page.
+  // - personalized: if truthy, show "Your seat is saved, <First>."; otherwise neutral preview header
+  // - serverGuests: optional list from a recent API call (e.g. POST response).
+  //   If absent, we render the fallback immediately and re-render with the
+  //   real database list as soon as GET /api/rsvp resolves.
+  function showDetailPage(personalized, serverGuests) {
+    if (personalized) {
+      const firstName = personalized.split(/\s+/)[0];
+      confirmName.textContent = `Your seat is saved, ${firstName}.`;
+    } else {
+      confirmName.textContent = 'All you need to know.';
+    }
+
+    // Render whatever we have right now so the transition isn't blocked
+    // by network latency. If serverGuests is null we'll backfill below.
+    renderGuestList(personalized || '', serverGuests);
+
+    rsvp.classList.remove('is-active');
+    rsvp.setAttribute('aria-hidden', 'true');
+
+    // Toggle .is-active off → reflow → on so the staggered .reveal
+    // transitions replay each visit. Combined with renderGuestList()
+    // recreating the <li>s, the per-name animation also replays.
+    confirm.classList.remove('is-active');
+    void confirm.offsetWidth;
+    setTimeout(() => {
+      confirm.classList.add('is-active');
+      confirm.setAttribute('aria-hidden', 'false');
+      try { confirm.scrollTo(0, 0); } catch (_) {}
+    }, 50);
+
+    // Backfill from the database if we don't already have a fresh list.
+    if (!Array.isArray(serverGuests)) {
+      fetchGuestList().then((guests) => {
+        if (guests) renderGuestList(personalized || '', guests);
+      });
+    }
+  }
+
+  function showRsvpPage() {
+    confirm.classList.remove('is-active');
+    confirm.setAttribute('aria-hidden', 'true');
+    setTimeout(() => {
+      rsvp.classList.add('is-active');
+      rsvp.setAttribute('aria-hidden', 'false');
+      try { rsvp.scrollTo(0, 0); } catch (_) {}
+    }, 250);
+  }
+
+  if (viewDetailsBtn) viewDetailsBtn.addEventListener('click', () => showDetailPage('', null));
+  if (backToRsvpBtn)  backToRsvpBtn.addEventListener('click', showRsvpPage);
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -193,22 +261,7 @@
     submitBtn.disabled = false;
     submitBtn.innerHTML = originalLabel;
 
-    // Personalize confirmation
-    const firstName = data.name.split(/\s+/)[0];
-    document.getElementById('confirmName').textContent =
-      `Your seat is saved, ${firstName}.`;
-
-    // Populate the guest list before the detail page is revealed
-    renderGuestList(data.name, serverGuests);
-
-    // Cross-fade RSVP → Detail page
-    rsvp.classList.remove('is-active');
-    rsvp.setAttribute('aria-hidden', 'true');
-    setTimeout(() => {
-      confirm.classList.add('is-active');
-      confirm.setAttribute('aria-hidden', 'false');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 250);
+    showDetailPage(data.name, serverGuests);
   });
 
   /* ---------- 3) Guest list ----------
@@ -231,11 +284,13 @@
     if (!ul) return;
 
     let names;
-    if (Array.isArray(serverGuests) && serverGuests.length) {
-      // Real shared list — newest already first because the API uses lpush
+    if (Array.isArray(serverGuests)) {
+      // API responded. Trust it verbatim — even an empty array means
+      // "database is genuinely empty," not "fall back to fake names."
       names = serverGuests.map((g) => (g && g.name) || '').filter(Boolean);
     } else {
-      // Local fallback
+      // No API response at all (local static dev, network drop) — use a
+      // local fallback so the page never looks broken or empty.
       let local = [];
       try {
         const stored = JSON.parse(localStorage.getItem('glampingRsvps') || '[]');
@@ -255,6 +310,15 @@
 
     const currKey = (currentName || '').trim().toLowerCase();
     ul.innerHTML = '';
+
+    if (!unique.length) {
+      const empty = document.createElement('li');
+      empty.className = 'guest-list-empty';
+      empty.textContent = 'Be the first to RSVP';
+      ul.appendChild(empty);
+      return;
+    }
+
     unique.forEach((name, i) => {
       const li = document.createElement('li');
       li.textContent = name;

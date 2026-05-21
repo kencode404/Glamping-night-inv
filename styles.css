@@ -302,14 +302,20 @@ img, video { display: block; max-width: 100%; }
    2) RSVP PAGE
    ============================================================ */
 
+/* Both sections overlay the viewport as fixed cross-fade layers, so
+   they don't stack in the document flow (which previously left a
+   black first-viewport when the detail page activated below). Each
+   handles its own internal scrolling if content is taller than the
+   screen. */
 .rsvp,
 .confirm {
-  min-height: 100vh;            /* fallback */
-  min-height: 100dvh;           /* dynamic viewport — handles mobile chrome */
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
   padding:
     calc(48px + env(safe-area-inset-top))
     calc(20px + env(safe-area-inset-right))
@@ -543,6 +549,66 @@ img, video { display: block; max-width: 100%; }
   color: rgba(243,230,207,0.6);
 }
 
+/* Subtle text link below the form to preview the detail page without
+   submitting. Same affordance is used to peek at the event without
+   committing yet. */
+.ghost-link {
+  display: block;
+  margin: 6px auto 0;
+  padding: 8px;
+  background: none;
+  border: 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: rgba(214,179,122,0.7);
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+@media (hover: hover) {
+  .ghost-link:hover { color: var(--gold-soft); transform: translateX(2px); }
+}
+.ghost-link:focus-visible {
+  outline: 1px solid rgba(214,179,122,0.6);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* Back-to-RSVP button on the detail page, top-left of the section. */
+.back-btn {
+  position: absolute;
+  top: calc(16px + env(safe-area-inset-top));
+  left: calc(16px + env(safe-area-inset-left));
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px 8px 10px;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(214,179,122,0.3);
+  border-radius: 999px;
+  color: var(--gold-soft);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+.back-btn svg { display: block; }
+@media (hover: hover) {
+  .back-btn:hover {
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    transform: translateX(-2px);
+  }
+}
+.back-btn:active { transform: translateX(0); }
+
 /* ============================================================
    3) DETAIL PAGE (post-RSVP)
    ============================================================ */
@@ -720,6 +786,18 @@ img, video { display: block; max-width: 100%; }
 @keyframes guest-in {
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Friendly placeholder shown only when the database is genuinely empty */
+.guest-list-empty {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  color: rgba(243,230,207,0.55);
+  text-align: center;
+  padding: 4px 0;
+  animation: guest-in 0.7s cubic-bezier(.2,.8,.2,1) 1.7s forwards;
+}
+.guest-list-empty::before { display: none !important; }
 
 /* Bottom signature */
 .details-signature {
