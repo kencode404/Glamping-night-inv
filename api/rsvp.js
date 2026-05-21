@@ -18,10 +18,10 @@ const supabase = createClient(
 async function listGuests() {
   const { data, error } = await supabase
     .from('rsvps')
-    .select('name')
+    .select('name, created_at')
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return (data || []).map((r) => ({ name: r.name }));
+  return (data || []).map((r) => ({ name: r.name, created_at: r.created_at }));
 }
 
 export default async function handler(req, res) {

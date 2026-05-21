@@ -279,31 +279,48 @@
     'Emily Tan',
   ];
 
+  // Format an ISO timestamp into a short, friendly label.
+  // Example output: "Jul 18 · 2:34 PM"
+  function formatRsvpTime(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    const date = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
+    return `${date} · ${time}`;
+  }
+
   function renderGuestList(currentName, serverGuests) {
     const ul = document.getElementById('guestList');
     if (!ul) return;
 
-    let names;
+    let entries;
     if (Array.isArray(serverGuests)) {
       // API responded. Trust it verbatim — even an empty array means
       // "database is genuinely empty," not "fall back to fake names."
-      names = serverGuests.map((g) => (g && g.name) || '').filter(Boolean);
+      entries = serverGuests
+        .map((g) => ({
+          name: g && g.name ? String(g.name).trim() : '',
+          time: g && g.created_at ? g.created_at : null,
+        }))
+        .filter((e) => e.name);
     } else {
       // No API response at all (local static dev, network drop) — use a
-      // local fallback so the page never looks broken or empty.
+      // local fallback so the page never looks broken or empty. No
+      // timestamps in this path; they only exist on database rows.
       let local = [];
       try {
         const stored = JSON.parse(localStorage.getItem('glampingRsvps') || '[]');
         local = stored.map((r) => (r && r.name ? r.name.trim() : '')).filter(Boolean).reverse();
       } catch (_) { /* ignore */ }
-      names = [...local, ...SEEDED_GUESTS];
+      entries = [...local, ...SEEDED_GUESTS].map((name) => ({ name, time: null }));
     }
 
     // Case-insensitive dedupe
     const seen = new Set();
-    const unique = names.filter((n) => {
-      const key = (n || '').toLowerCase();
-      if (!key || seen.has(key)) return false;
+    const unique = entries.filter((e) => {
+      const key = e.name.toLowerCase();
+      if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
@@ -319,11 +336,25 @@
       return;
     }
 
-    unique.forEach((name, i) => {
+    unique.forEach((entry, i) => {
       const li = document.createElement('li');
-      li.textContent = name;
       li.style.setProperty('--i', i);
-      if (currKey && name.toLowerCase() === currKey) li.classList.add('you');
+      if (currKey && entry.name.toLowerCase() === currKey) li.classList.add('you');
+
+      const nameEl = document.createElement('span');
+      nameEl.className = 'g-name';
+      nameEl.textContent = entry.name;
+      li.appendChild(nameEl);
+
+      const label = formatRsvpTime(entry.time);
+      if (label) {
+        const timeEl = document.createElement('time');
+        timeEl.className = 'g-time';
+        timeEl.dateTime = entry.time;
+        timeEl.textContent = label;
+        li.appendChild(timeEl);
+      }
+
       ul.appendChild(li);
     });
   }

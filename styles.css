@@ -733,6 +733,66 @@ img, video { display: block; max-width: 100%; }
   line-height: 1.5;
 }
 
+/* Dress code reference photo — polaroid-style frame with gold accent
+   corners. Drops in from above with a slight bounce after the card
+   itself has revealed. */
+.dresscode-photo {
+  position: relative;
+  margin: 6px auto 16px;
+  max-width: 280px;
+  padding: 7px 7px 11px;
+  background: linear-gradient(180deg, rgba(20,24,29,0.85), rgba(11,13,16,0.92));
+  border: 1px solid rgba(214,179,122,0.32);
+  border-radius: 4px;
+  box-shadow:
+    0 14px 32px rgba(0,0,0,0.5),
+    0 4px 10px rgba(0,0,0,0.35),
+    inset 0 0 0 1px rgba(214,179,122,0.12);
+
+  /* Drop-in start state. Tied to .confirm.is-active so it replays on
+     every visit to the detail page. */
+  opacity: 0;
+  transform: translateY(-36px) rotate(-4deg) scale(0.94);
+  transition:
+    opacity 0.7s ease,
+    transform 0.95s cubic-bezier(.34, 1.56, .64, 1);
+  transition-delay: 1.6s;
+}
+.confirm.is-active .dresscode-photo {
+  opacity: 1;
+  transform: translateY(0) rotate(-1.3deg) scale(1);
+}
+.dresscode-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 2px;
+  filter: saturate(0.95) contrast(1.02);
+}
+
+/* Art-deco gold corner accents on the opposing corners */
+.dresscode-photo::before,
+.dresscode-photo::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--gold);
+  pointer-events: none;
+}
+.dresscode-photo::before {
+  top: -3px;
+  left: -3px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.dresscode-photo::after {
+  bottom: -3px;
+  right: -3px;
+  border-left: 0;
+  border-top: 0;
+}
+
 /* Guest list */
 .guest-list {
   list-style: none;
@@ -764,6 +824,22 @@ img, video { display: block; max-width: 100%; }
   opacity: 0.65;
   flex-shrink: 0;
 }
+.guest-list .g-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.guest-list .g-time {
+  flex-shrink: 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: rgba(243,230,207,0.5);
+  white-space: nowrap;
+}
 .guest-list li.you { color: #fff; font-weight: 500; }
 .guest-list li.you::before {
   width: 9px;
@@ -771,9 +847,9 @@ img, video { display: block; max-width: 100%; }
   opacity: 1;
   box-shadow: 0 0 0 3px rgba(214,179,122,0.18);
 }
+.guest-list li.you .g-time { color: rgba(214,179,122,0.7); }
 .guest-list li.you::after {
   content: "you";
-  margin-left: auto;
   font-family: var(--sans);
   font-size: 9px;
   letter-spacing: 0.32em;
@@ -782,6 +858,7 @@ img, video { display: block; max-width: 100%; }
   background: rgba(214,179,122,0.15);
   padding: 3px 9px;
   border-radius: 999px;
+  flex-shrink: 0;
 }
 @keyframes guest-in {
   to { opacity: 1; transform: translateY(0); }
