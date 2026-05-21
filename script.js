@@ -124,6 +124,9 @@
     musicRevealed = true;
     // Re-issue play() defensively — no-op if it's already playing.
     safePlay(bgMusic);
+    // Unmute (the iOS-respected switch) AND ramp volume up for
+    // non-iOS browsers where the property is honored.
+    try { bgMusic.muted = false; } catch (_) {}
     fadeInVolume(bgMusic, 0.4, 1500);
   }
 
@@ -147,18 +150,30 @@
     // primeVideo also leaves muted=false so later plays have audio.
     primeVideo(chairsVid, 2);
     primeVideo(sofaVid, 0);
-    // Background music: iOS Safari is stricter with <audio> than
-    // <video>. The prime+pause trick doesn't reliably keep activation
-    // for audio elements, so instead we start the music NOW at
-    // volume 0 (synchronously inside the gesture) and just fade the
-    // volume up later. iOS sees a continuous, gesture-initiated
-    // play, so the deferred audible reveal isn't blocked.
+    // Background music: iOS Safari has two quirks we have to work
+    // around. (1) audio.volume is read-only on iOS — setting it to 0
+    // is silently ignored, so the music would play at full system
+    // volume. Use audio.muted (which iOS does respect) instead.
+    // (2) iOS may suspend the audio element when other media pauses
+    // (end of intro), so a 'pause' listener re-issues play if we
+    // didn't initiate the pause.
     if (bgMusic) {
       try {
-        bgMusic.volume = 0;
+        bgMusic.muted = true;
         const p = bgMusic.play();
         if (p && p.catch) p.catch(() => {});
       } catch (_) { /* swallow */ }
+
+      // Auto-resume if iOS suspends the audio behind our back. We
+      // never intentionally pause the music after revealing it, so any
+      // pause while musicRevealed === true is unexpected.
+      bgMusic.addEventListener('pause', () => {
+        if (!musicRevealed) return;
+        // Defer one tick so we don't fight a legitimate user pause.
+        setTimeout(() => {
+          if (musicRevealed && bgMusic.paused) safePlay(bgMusic);
+        }, 50);
+      });
     }
 
     // Dismiss the gate and arm the title-card animations
@@ -209,9 +224,12 @@
     // After fade, remove from layout
     setTimeout(() => intro.classList.add('is-done'), 1300);
 
-    // Pause videos to save battery
+    // Pause videos to save battery, then ensure music is still going.
+    // iOS often suspends the audio element when other media pauses,
+    // so we re-issue play() right after the videos stop.
     setTimeout(() => {
       [chairsVid, sofaVid].forEach((v) => { try { v.pause(); } catch (_) {} });
+      if (musicRevealed) safePlay(bgMusic);
     }, 1400);
   }
 
