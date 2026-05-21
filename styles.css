@@ -347,9 +347,8 @@ img, video { display: block; max-width: 100%; }
     linear-gradient(180deg, rgba(11,13,16,0.65), rgba(11,13,16,0.9));
 }
 
-/* Card */
-.rsvp-card,
-.confirm-card {
+/* RSVP card */
+.rsvp-card {
   position: relative;
   z-index: 1;
   width: 100%;
@@ -365,8 +364,7 @@ img, video { display: block; max-width: 100%; }
   transition: transform 1s cubic-bezier(.2,.8,.2,1) 0.2s;
 }
 
-.rsvp.is-active .rsvp-card,
-.confirm.is-active .confirm-card {
+.rsvp.is-active .rsvp-card {
   transform: translateY(0);
 }
 
@@ -486,6 +484,16 @@ img, video { display: block; max-width: 100%; }
   color: var(--gold);
   font-weight: 500;
 }
+.field label .optional {
+  font-family: var(--serif);
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: rgba(214,179,122,0.6);
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 400;
+}
 .field input {
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(214, 179, 122, 0.28);
@@ -536,41 +544,204 @@ img, video { display: block; max-width: 100%; }
 }
 
 /* ============================================================
-   3) CONFIRMATION
+   3) DETAIL PAGE (post-RSVP)
    ============================================================ */
 
-.confirm-card {
+/* Detail page is tall — align top so content scrolls naturally on phones */
+.confirm { align-items: flex-start; }
+
+.detail-page {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 0 auto;
+}
+
+/* --- Hero (confirmation header) --- */
+.hero {
   text-align: center;
-  padding: 52px 36px 44px;
+  padding: 14px 16px 4px;
 }
 .check {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 18px;
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 14px;
   color: var(--gold);
 }
 .check svg { width: 100%; height: 100%; }
-.confirm-card h2 {
+.hero .eyebrow.gold { animation: none; opacity: 1; }
+.hero h2 {
   font-family: var(--serif);
   font-weight: 400;
   font-style: italic;
-  font-size: 30px;
+  font-size: clamp(28px, 7vw, 34px);
+  line-height: 1.15;
   color: #fff;
-  margin: 6px 0 14px;
+  margin: 8px 0 10px;
 }
-.confirm-msg {
+.hero-msg {
   font-family: var(--serif);
-  font-size: 16px;
+  font-size: 15px;
   color: rgba(243,230,207,0.78);
   line-height: 1.55;
-  margin: 0 0 22px;
+  margin: 0;
 }
-.signature {
+
+/* --- Info cards (event, dress code, guests) --- */
+.info-card {
+  padding: 22px 22px 20px;
+  background: linear-gradient(180deg, rgba(20,24,29,0.85), rgba(11,13,16,0.92));
+  border: 1px solid rgba(214,179,122,0.25);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+}
+.card-eyebrow {
+  margin: 0 0 14px;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-align: center;
+}
+
+/* Event detail rows */
+.detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+}
+.detail-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.detail-list svg {
+  width: 22px;
+  height: 22px;
+  fill: var(--gold);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.detail-list strong {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 17px;
+  color: #fff;
+  display: block;
+}
+.detail-list .sub {
+  display: block;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 13px;
+  color: rgba(243,230,207,0.65);
+  margin-top: 2px;
+}
+
+/* Dress-code text inside the detail card */
+.detail-title {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 28px;
+  text-align: center;
+  color: #fff;
+  margin: 4px 0 8px;
+}
+.detail-hint {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  color: rgba(243,230,207,0.7);
+  text-align: center;
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+
+/* Guest list */
+.guest-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.guest-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--cream);
+  opacity: 0;
+  transform: translateY(8px);
+  animation: guest-in 0.7s cubic-bezier(.2,.8,.2,1) forwards;
+  /* per-name stagger after the card itself has revealed (--rd:3 → ~1.4s) */
+  animation-delay: calc(var(--i, 0) * 0.12s + 1.7s);
+}
+.guest-list li::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+  opacity: 0.65;
+  flex-shrink: 0;
+}
+.guest-list li.you { color: #fff; font-weight: 500; }
+.guest-list li.you::before {
+  width: 9px;
+  height: 9px;
+  opacity: 1;
+  box-shadow: 0 0 0 3px rgba(214,179,122,0.18);
+}
+.guest-list li.you::after {
+  content: "you";
+  margin-left: auto;
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: rgba(214,179,122,0.15);
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+@keyframes guest-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Bottom signature */
+.details-signature {
   font-family: var(--serif);
   letter-spacing: 0.42em;
   text-transform: uppercase;
   font-size: 11px;
   color: var(--gold);
+  text-align: center;
+  padding: 8px 8px 4px;
+}
+
+/* Staggered reveal: each top-level section fades up after .confirm becomes active */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.9s ease, transform 0.9s cubic-bezier(.2,.8,.2,1);
+  transition-delay: calc(var(--rd, 0) * 0.4s + 0.2s);
+}
+.confirm.is-active .reveal {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ============================================================
@@ -589,7 +760,7 @@ img, video { display: block; max-width: 100%; }
   .subtitle { letter-spacing: 0.32em; font-size: 12px; }
   .eyebrow  { letter-spacing: 0.36em; }
 
-  .rsvp-card, .confirm-card {
+  .rsvp-card {
     padding: 32px 22px 26px;
     border-radius: 14px;
   }
@@ -609,10 +780,19 @@ img, video { display: block; max-width: 100%; }
   .field input    { padding: 13px 14px; }   /* keep ≥16px font to avoid iOS zoom */
   .submit-btn     { padding: 15px 18px; }    /* generous tap target */
 
-  .confirm-card   { padding: 40px 24px 30px; }
-  .check          { width: 56px; height: 56px; }
-  .confirm-card h2 { font-size: 26px; }
-  .confirm-msg    { font-size: 15px; }
+  /* Detail page (post-RSVP) on phones */
+  .detail-page    { gap: 14px; }
+  .info-card      { padding: 18px 18px 16px; border-radius: 14px; }
+  .hero           { padding: 8px 12px 0; }
+  .check          { width: 54px; height: 54px; margin: 0 auto 10px; }
+  .hero h2        { font-size: clamp(26px, 7vw, 30px); }
+  .hero-msg       { font-size: 14px; }
+  .detail-list    { gap: 14px; }
+  .detail-list strong { font-size: 16px; }
+  .detail-list .sub   { font-size: 12.5px; }
+  .detail-title   { font-size: 24px; }
+  .detail-hint    { font-size: 13px; }
+  .guest-list li  { font-size: 15px; }
 }
 
 /* Very small phones */
@@ -620,7 +800,8 @@ img, video { display: block; max-width: 100%; }
   .title          { font-size: 40px; }
   .card-header h2 { font-size: 28px; }
   .details li     { font-size: 15px; }
-  .rsvp-card, .confirm-card { padding: 28px 18px 22px; }
+  .rsvp-card      { padding: 28px 18px 22px; }
+  .info-card      { padding: 16px 16px 14px; }
 }
 
 /* Landscape phones — keep intro readable on short viewports */

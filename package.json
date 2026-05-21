@@ -1,0 +1,12 @@
+{
+  "name": "rooftop-party-2026",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Rooftop Party 2026 invitation site with shared RSVP list backed by Supabase.",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

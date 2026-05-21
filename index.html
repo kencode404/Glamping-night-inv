@@ -100,6 +100,10 @@
           <label for="phone">Phone</label>
           <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required />
         </div>
+        <div class="field">
+          <label for="allergy">Food Allergies <span class="optional">(optional)</span></label>
+          <input id="allergy" name="allergy" type="text" placeholder="e.g. nuts, shellfish, or none" autocomplete="off" />
+        </div>
         <button type="submit" class="submit-btn">
           <span>Reserve My Spot</span>
         </button>
@@ -108,20 +112,61 @@
     </div>
   </section>
 
-  <!-- CONFIRMATION -->
+  <!-- DETAIL PAGE (post-RSVP) -->
   <section id="confirm" class="confirm" aria-hidden="true">
     <div class="confirm-bg">
       <img src="assets/Glamping night scene.png" alt="" aria-hidden="true" />
       <div class="rsvp-overlay"></div>
     </div>
-    <div class="confirm-card">
-      <div class="check">
-        <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M14 27l8 8 16-18"/></svg>
-      </div>
-      <p class="eyebrow gold">See you there</p>
-      <h2 id="confirmName">Your seat is saved.</h2>
-      <p class="confirm-msg">A reminder will find you closer to the night. Until then — keep looking up.</p>
-      <div class="signature">— Rooftop Party 2026 —</div>
+
+    <div class="detail-page">
+      <header class="hero reveal" style="--rd:0">
+        <div class="check" aria-hidden="true">
+          <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M14 27l8 8 16-18"/></svg>
+        </div>
+        <p class="eyebrow gold">See you there</p>
+        <h2 id="confirmName">Your seat is saved.</h2>
+        <p class="hero-msg">A reminder will find you closer to the night.</p>
+      </header>
+
+      <article class="info-card reveal" style="--rd:1">
+        <p class="card-eyebrow">The Evening</p>
+        <ul class="detail-list">
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2V2h-2v2H9V2H7zm-2 8h14v10H5V10zm2 2v2h2v-2H7zm4 0v2h2v-2h-2zm4 0v2h2v-2h-2z"/></svg>
+            <div><strong>Friday, July 25, 2025</strong><span class="sub">Mark your calendar</span></div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+            <div><strong>The Rooftop, Bangunan Bei</strong><span class="sub">Top floor — take the lift</span></div>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm.5-13H11v6l5.2 3.1.8-1.3-4.5-2.7z"/></svg>
+            <div><strong>6:30 PM onwards</strong><span class="sub">Light bites, drinks &amp; music</span></div>
+          </li>
+        </ul>
+      </article>
+
+      <article class="info-card reveal" style="--rd:2">
+        <p class="card-eyebrow">Dress Code</p>
+        <h3 class="detail-title">Earth Tones</h3>
+        <p class="detail-hint">Beige, olive, brown, cream, denim and all cozy natural shades.</p>
+        <ul class="swatches" aria-hidden="true">
+          <li style="--c:#edd6b1"></li>
+          <li style="--c:#b89484"></li>
+          <li style="--c:#4f5d3e"></li>
+          <li style="--c:#a7b6c1"></li>
+          <li style="--c:#c48766"></li>
+          <li style="--c:#e6d5d6"></li>
+        </ul>
+      </article>
+
+      <article class="info-card reveal" style="--rd:3">
+        <p class="card-eyebrow">Who's Coming</p>
+        <ul id="guestList" class="guest-list"></ul>
+      </article>
+
+      <div class="details-signature reveal" style="--rd:4">— Rooftop Party 2026 —</div>
     </div>
   </section>
 

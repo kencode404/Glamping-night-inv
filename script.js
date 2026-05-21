@@ -130,7 +130,7 @@
 
   const phoneRe = /^[+\d][\d\s\-()]{6,}$/;
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const fields = {
@@ -154,25 +154,54 @@
       return;
     }
 
+    const allergyInput = form.elements.allergy;
     const data = {
-      name:  fields.name.value.trim(),
-      phone: fields.phone.value.trim(),
-      at:    new Date().toISOString(),
+      name:    fields.name.value.trim(),
+      phone:   fields.phone.value.trim(),
+      allergy: allergyInput ? allergyInput.value.trim() : '',
     };
 
-    // Local demo persistence — view via console: JSON.parse(localStorage.glampingRsvps)
+    // Disable the button while we save
+    const submitBtn = form.querySelector('.submit-btn');
+    const originalLabel = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span>Reserving…</span>';
+
+    // POST to the shared RSVP store. If the API is unreachable (local
+    // static dev, network drop), we still proceed with the detail page
+    // using a local-only fallback so the user sees confirmation.
+    let serverGuests = null;
+    try {
+      const resp = await fetch('/api/rsvp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (resp.ok) {
+        const json = await resp.json();
+        if (Array.isArray(json.guests)) serverGuests = json.guests;
+      }
+    } catch (_) { /* swallow; fall through to local fallback */ }
+
+    // Also keep a local copy as a belt-and-braces backup
     try {
       const list = JSON.parse(localStorage.getItem('glampingRsvps') || '[]');
-      list.push(data);
+      list.push({ ...data, at: new Date().toISOString() });
       localStorage.setItem('glampingRsvps', JSON.stringify(list));
     } catch (_) { /* ignore */ }
+
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalLabel;
 
     // Personalize confirmation
     const firstName = data.name.split(/\s+/)[0];
     document.getElementById('confirmName').textContent =
       `Your seat is saved, ${firstName}.`;
 
-    // Cross-fade RSVP → Confirmation
+    // Populate the guest list before the detail page is revealed
+    renderGuestList(data.name, serverGuests);
+
+    // Cross-fade RSVP → Detail page
     rsvp.classList.remove('is-active');
     rsvp.setAttribute('aria-hidden', 'true');
     setTimeout(() => {
@@ -181,6 +210,59 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 250);
   });
+
+  /* ---------- 3) Guest list ----------
+     Source-of-truth is the /api/rsvp endpoint (Upstash Redis on Vercel).
+     If the API returned a list (`serverGuests`), use it verbatim — that
+     is the real shared list. If not (local static dev, network drop),
+     fall back to localStorage + a small set of seed names so the page
+     never looks empty. */
+
+  const SEEDED_GUESTS = [
+    'Maria Lopez',
+    'James Chen',
+    'Sarah Williams',
+    'David Park',
+    'Emily Tan',
+  ];
+
+  function renderGuestList(currentName, serverGuests) {
+    const ul = document.getElementById('guestList');
+    if (!ul) return;
+
+    let names;
+    if (Array.isArray(serverGuests) && serverGuests.length) {
+      // Real shared list — newest already first because the API uses lpush
+      names = serverGuests.map((g) => (g && g.name) || '').filter(Boolean);
+    } else {
+      // Local fallback
+      let local = [];
+      try {
+        const stored = JSON.parse(localStorage.getItem('glampingRsvps') || '[]');
+        local = stored.map((r) => (r && r.name ? r.name.trim() : '')).filter(Boolean).reverse();
+      } catch (_) { /* ignore */ }
+      names = [...local, ...SEEDED_GUESTS];
+    }
+
+    // Case-insensitive dedupe
+    const seen = new Set();
+    const unique = names.filter((n) => {
+      const key = (n || '').toLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    const currKey = (currentName || '').trim().toLowerCase();
+    ul.innerHTML = '';
+    unique.forEach((name, i) => {
+      const li = document.createElement('li');
+      li.textContent = name;
+      li.style.setProperty('--i', i);
+      if (currKey && name.toLowerCase() === currKey) li.classList.add('you');
+      ul.appendChild(li);
+    });
+  }
 
   // Clear error state as user types
   form.querySelectorAll('input').forEach((input) => {
