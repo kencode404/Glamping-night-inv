@@ -7,6 +7,7 @@
   const rsvp       = document.getElementById('rsvp');
   const confirm    = document.getElementById('confirm');
   const skipBtn    = document.getElementById('skipBtn');
+  const beginGate  = document.getElementById('beginGate');
   const form       = document.getElementById('rsvpForm');
   const chairsVid  = document.querySelector('.hero-video.chairs');
   const sofaVid    = document.querySelector('.hero-video.sofa');
@@ -18,21 +19,30 @@
 
   const safePlay = (v) => v && v.play().catch(() => { /* swallow */ });
 
-  const CROSSFADE_SEC   = 0.9;  // seconds before chairs ends → start sofa
-  const HOLD_AFTER_SOFA = 900;  // ms to linger on the title after sofa ends
-  const SAFETY_MS       = 14000;// hard fallback if video events never fire
+  // Linear volume ramp to 0. No-op if muted or already silent.
+  const fadeAudio = (video, durationMs) => {
+    if (!video || video.muted || video.volume === 0) return;
+    const start = video.volume;
+    const t0 = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / durationMs);
+      try { video.volume = start * (1 - p); } catch (_) {}
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
 
-  // Kick off chairs once title eyebrow has appeared
-  setTimeout(() => {
-    chairsVid.classList.add('is-playing');
-    safePlay(chairsVid);
-  }, 900);
+  const CROSSFADE_SEC      = 0.9;   // seconds before chairs ends → start sofa
+  const SOFA_AUDIO_FADE_SEC = 1.5;  // audio fade-out at sofa's natural end
+  const HOLD_AFTER_SOFA    = 900;   // ms to linger on the title after sofa ends
+  const SAFETY_MS          = 14000; // hard fallback if video events never fire
 
   // Crossfade chairs → sofa when chairs nears the end
   let sofaStarted = false;
   const startSofa = () => {
     if (sofaStarted) return;
     sofaStarted = true;
+    fadeAudio(chairsVid, CROSSFADE_SEC * 1000); // duck chairs audio under sofa
     sofaVid.classList.add('is-playing');
     safePlay(sofaVid);
     chairsVid.classList.remove('is-playing');
@@ -46,17 +56,75 @@
   });
   chairsVid.addEventListener('ended', startSofa); // belt-and-braces
 
-  // End the intro after sofa finishes, with a safety fallback
-  const introTimer = setTimeout(endIntro, SAFETY_MS);
+  // Fade sofa audio in the last SOFA_AUDIO_FADE_SEC of its natural play
+  let sofaAudioFaded = false;
+  sofaVid.addEventListener('timeupdate', () => {
+    if (sofaAudioFaded) return;
+    const d = sofaVid.duration;
+    if (!isFinite(d) || d <= 0) return;
+    if (sofaVid.currentTime >= d - SOFA_AUDIO_FADE_SEC) {
+      sofaAudioFaded = true;
+      fadeAudio(sofaVid, SOFA_AUDIO_FADE_SEC * 1000);
+    }
+  });
+
   sofaVid.addEventListener('ended', () => {
     setTimeout(endIntro, HOLD_AFTER_SOFA);
   });
+
+  // Intro is gated by the user tap so videos can play with sound.
+  // introTimer / skip handlers are armed only once the tap fires.
+  let introTimer = null;
+  let introStarted = false;
+  function beginIntro() {
+    if (introStarted) return;
+    introStarted = true;
+
+    // User gesture unlocks unmuted playback in all major browsers
+    try { chairsVid.muted = false; } catch (_) {}
+    try { sofaVid.muted = false; } catch (_) {}
+
+    // Dismiss the gate
+    beginGate.classList.add('is-dismissing');
+    setTimeout(() => beginGate.classList.add('is-done'), 1000);
+
+    // Kick off chairs (short delay so the gate has begun fading)
+    setTimeout(() => {
+      chairsVid.classList.add('is-playing');
+      safePlay(chairsVid);
+    }, 500);
+
+    // Safety fallback if video events never fire
+    introTimer = setTimeout(endIntro, SAFETY_MS);
+
+    // Skip-anywhere handlers (click on intro or Enter/Space/Escape)
+    setTimeout(() => {
+      intro.addEventListener('click', (e) => {
+        if (e.target === skipBtn) return;
+        clearTimeout(introTimer);
+        endIntro();
+      });
+      window.addEventListener('keydown', (e) => {
+        if (intro.classList.contains('is-done')) return;
+        if (['Enter', ' ', 'Escape'].includes(e.key)) {
+          clearTimeout(introTimer);
+          endIntro();
+        }
+      });
+    }, 800);
+  }
+
+  beginGate.addEventListener('click', beginIntro);
 
   function endIntro() {
     if (intro.classList.contains('is-leaving')) return;
     intro.classList.add('is-leaving');
     rsvp.classList.add('is-active');
     rsvp.setAttribute('aria-hidden', 'false');
+
+    // Fade audio in step with the visual fade so skipping isn't a hard cut
+    fadeAudio(chairsVid, 900);
+    fadeAudio(sofaVid, 900);
 
     // After fade, remove from layout
     setTimeout(() => intro.classList.add('is-done'), 1300);
@@ -71,22 +139,6 @@
     clearTimeout(introTimer);
     endIntro();
   });
-
-  // Allow Enter / Space / click anywhere on the intro to skip after first second
-  setTimeout(() => {
-    intro.addEventListener('click', (e) => {
-      if (e.target === skipBtn) return;
-      clearTimeout(introTimer);
-      endIntro();
-    });
-    window.addEventListener('keydown', (e) => {
-      if (intro.classList.contains('is-done')) return;
-      if (['Enter', ' ', 'Escape'].includes(e.key)) {
-        clearTimeout(introTimer);
-        endIntro();
-      }
-    });
-  }, 800);
 
   /* ---------- 2) RSVP form ---------- */
 
