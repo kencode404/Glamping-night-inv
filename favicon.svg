@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#0b0d10"/>
+  <!-- Tent body: gold triangle -->
+  <path d="M16 5 L4 27 L28 27 Z" fill="#d6b37a"/>
+  <!-- Doorway: dark V cut from the bottom center -->
+  <path d="M13 27 L16 14 L19 27 Z" fill="#0b0d10"/>
+</svg>
