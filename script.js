@@ -1,5 +1,5 @@
 /* ================================================================
-   Under The Stars — cinematic intro + RSVP flow
+   Rooftop Party 2026 — cinematic intro + RSVP flow
    ================================================================ */
 
 (() => {
@@ -11,6 +11,7 @@
   const form       = document.getElementById('rsvpForm');
   const chairsVid  = document.querySelector('.hero-video.chairs');
   const sofaVid    = document.querySelector('.hero-video.sofa');
+  const introText  = document.querySelector('.intro-text');
 
   /* ---------- 1) Cinematic intro sequencing ----------
      Chairs assemble plays first (starting from its 2s mark via
@@ -43,6 +44,7 @@
     if (sofaStarted) return;
     sofaStarted = true;
     fadeAudio(chairsVid, CROSSFADE_SEC * 1000); // duck chairs audio under sofa
+    if (introText) introText.classList.add('is-fading'); // hide 'Rooftop Party 2026' before sofa
     sofaVid.classList.add('is-playing');
     safePlay(sofaVid);
     chairsVid.classList.remove('is-playing');
@@ -96,22 +98,6 @@
 
     // Safety fallback if video events never fire
     introTimer = setTimeout(endIntro, SAFETY_MS);
-
-    // Skip-anywhere handlers (click on intro or Enter/Space/Escape)
-    setTimeout(() => {
-      intro.addEventListener('click', (e) => {
-        if (e.target === skipBtn) return;
-        clearTimeout(introTimer);
-        endIntro();
-      });
-      window.addEventListener('keydown', (e) => {
-        if (intro.classList.contains('is-done')) return;
-        if (['Enter', ' ', 'Escape'].includes(e.key)) {
-          clearTimeout(introTimer);
-          endIntro();
-        }
-      });
-    }, 800);
   }
 
   beginGate.addEventListener('click', beginIntro);
@@ -142,7 +128,6 @@
 
   /* ---------- 2) RSVP form ---------- */
 
-  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const phoneRe = /^[+\d][\d\s\-()]{6,}$/;
 
   form.addEventListener('submit', (e) => {
@@ -150,7 +135,6 @@
 
     const fields = {
       name:  form.elements.name,
-      email: form.elements.email,
       phone: form.elements.phone,
     };
 
@@ -159,7 +143,6 @@
       const wrap = input.closest('.field');
       const val  = input.value.trim();
       let ok = val.length > 0;
-      if (key === 'email') ok = emailRe.test(val);
       if (key === 'phone') ok = phoneRe.test(val);
 
       wrap.classList.toggle('has-error', !ok);
@@ -173,7 +156,6 @@
 
     const data = {
       name:  fields.name.value.trim(),
-      email: fields.email.value.trim(),
       phone: fields.phone.value.trim(),
       at:    new Date().toISOString(),
     };
