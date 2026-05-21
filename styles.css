@@ -58,6 +58,18 @@ img, video { display: block; max-width: 100%; }
   overflow: hidden;
 }
 
+/* Ambient backdrop: a heavily blurred, dimmed copy of the rooftop scene
+   fills the letterboxed area around the (capped-resolution) hero videos.
+   Inset is negative so the blur edges are clipped by overflow:hidden. */
+.intro-stage::before {
+  content: "";
+  position: absolute;
+  inset: -8%;
+  background: url('assets/Glamping%20night%20scene.png') center/cover no-repeat;
+  filter: blur(48px) brightness(0.7) saturate(1.2);
+  pointer-events: none;
+}
+
 /* Video clips are the intro — chairs first, then sofa.
    Sequenced via JS by toggling .is-playing / .is-fading.
    Capped at native resolution so low-res sources don't pixelate
@@ -79,25 +91,6 @@ img, video { display: block; max-width: 100%; }
 
 .hero-video.is-playing { opacity: 1; }
 .hero-video.is-fading  { opacity: 0; }
-
-/* Ambient backdrop: same clip, scaled to fill, heavily blurred & dimmed.
-   Sits behind the sharp video (declared earlier in DOM) so the letterboxed
-   area shows soft moving color that matches the scene. */
-.hero-video.backdrop {
-  max-width: none;
-  max-height: none;
-  width: 115%;
-  height: 115%;
-  object-fit: cover;
-  transform: translate(-50%, -50%) scale(1.15);
-  filter: blur(46px) brightness(0.85) saturate(1.25);
-}
-.hero-video.backdrop.is-playing { opacity: 1; }
-
-/* Skip the second decode on small / low-power devices */
-@media (max-width: 720px), (prefers-reduced-motion: reduce) {
-  .hero-video.backdrop { display: none; }
-}
 
 /* Soft vignette + warm gradient to focus the eye */
 .vignette {
