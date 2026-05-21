@@ -122,7 +122,14 @@
     }, TITLE_REVEAL_MS + HOLD_MS);
 
     // Start the intro video once the title has finished fading.
+    // Force currentTime back to 0 right before play — the prime step
+    // can leave the video at a non-zero position (the play() promise
+    // resolves after the video has been running for some ms, and the
+    // post-pause seek to 0 is async and not guaranteed to complete
+    // before this point). Without this re-seek, the video occasionally
+    // appeared mid-clip.
     videoPlayTimer = setTimeout(() => {
+      try { introVid.currentTime = 0; } catch (_) {}
       introVid.classList.add('is-playing');
       safePlay(introVid);
     }, TITLE_REVEAL_MS + HOLD_MS + TITLE_FADE_MS);
