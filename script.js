@@ -12,6 +12,7 @@
   const chairsVid  = document.querySelector('.hero-video.chairs');
   const sofaVid    = document.querySelector('.hero-video.sofa');
   const introText  = document.querySelector('.intro-text');
+  const bgMusic    = document.getElementById('bgMusic');
 
   /* ---------- 1) Cinematic intro sequencing ----------
      Chairs assemble plays first (starting from its 2s mark via
@@ -48,6 +49,20 @@
     const step = (now) => {
       const p = Math.min(1, (now - t0) / durationMs);
       try { video.volume = start * (1 - p); } catch (_) {}
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+
+  // Linear ramp UP from 0 → target volume. Used for the background
+  // music so it fades in instead of slamming on at full level.
+  const fadeInVolume = (media, target, durationMs) => {
+    if (!media) return;
+    try { media.volume = 0; } catch (_) {}
+    const t0 = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / durationMs);
+      try { media.volume = target * p; } catch (_) {}
       if (p < 1) requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
@@ -121,6 +136,9 @@
     // primeVideo also leaves muted=false so later plays have audio.
     primeVideo(chairsVid, 2);
     primeVideo(sofaVid, 0);
+    // Same trick for the background-music <audio> element so we can
+    // start it after the title card fades out without being blocked.
+    primeVideo(bgMusic, 0);
 
     // Dismiss the gate and arm the title-card animations
     beginGate.classList.add('is-dismissing');
@@ -132,10 +150,15 @@
       if (introText) introText.classList.add('is-fading');
     }, TITLE_REVEAL_MS + HOLD_MS);
 
-    // Start the chairs video once the title has finished fading out
+    // Start the chairs video once the title has finished fading out,
+    // and fade in the looping background music alongside it.
     chairsPlayTimer = setTimeout(() => {
       chairsVid.classList.add('is-playing');
       safePlay(chairsVid);
+      if (bgMusic) {
+        safePlay(bgMusic);
+        fadeInVolume(bgMusic, 0.4, 1800);
+      }
     }, TITLE_REVEAL_MS + HOLD_MS + TITLE_FADE_MS);
 
     // Safety fallback — extended to cover the new title-card phase
