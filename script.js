@@ -116,6 +116,7 @@
   let titleFadeTimer = null;
   let chairsPlayTimer = null;
   let musicRevealed = false;
+  let musicShouldPlay = false;
 
   // Make the music audible. Idempotent so the chairs-reveal path and
   // the skip path can both call it without double-fading.
@@ -150,13 +151,17 @@
     // primeVideo also leaves muted=false so later plays have audio.
     primeVideo(chairsVid, 2);
     primeVideo(sofaVid, 0);
-    // Background music: iOS Safari has two quirks we have to work
-    // around. (1) audio.volume is read-only on iOS — setting it to 0
-    // is silently ignored, so the music would play at full system
-    // volume. Use audio.muted (which iOS does respect) instead.
-    // (2) iOS may suspend the audio element when other media pauses
-    // (end of intro), so a 'pause' listener re-issues play if we
-    // didn't initiate the pause.
+    // Background music: start it muted RIGHT NOW (inside the user
+    // gesture) so iOS Safari permits it. It stays muted through the
+    // entire video phase — no overlap with the video audio — and gets
+    // unmuted later in endIntro (natural sofa end or skip).
+    //
+    // iOS quirks handled:
+    //   - audio.volume is read-only on iOS, so we use audio.muted
+    //     instead to switch between silent and audible.
+    //   - iOS may suspend the audio element when sibling <video>
+    //     elements pause. The 'pause' listener auto-resumes it so
+    //     the audio is still alive (just muted) when we unmute later.
     if (bgMusic) {
       try {
         bgMusic.muted = true;
@@ -164,14 +169,13 @@
         if (p && p.catch) p.catch(() => {});
       } catch (_) { /* swallow */ }
 
-      // Auto-resume if iOS suspends the audio behind our back. We
-      // never intentionally pause the music after revealing it, so any
-      // pause while musicRevealed === true is unexpected.
+      musicShouldPlay = true;
+
       bgMusic.addEventListener('pause', () => {
-        if (!musicRevealed) return;
-        // Defer one tick so we don't fight a legitimate user pause.
+        if (!musicShouldPlay) return;
+        // Defer one tick so we don't race a legitimate pause.
         setTimeout(() => {
-          if (musicRevealed && bgMusic.paused) safePlay(bgMusic);
+          if (musicShouldPlay && bgMusic.paused) safePlay(bgMusic);
         }, 50);
       });
     }
@@ -186,12 +190,13 @@
       if (introText) introText.classList.add('is-fading');
     }, TITLE_REVEAL_MS + HOLD_MS);
 
-    // Start the chairs video once the title has finished fading out,
-    // and reveal the (already-playing-at-volume-0) music alongside.
+    // Start the chairs video once the title has finished fading out.
+    // Music does NOT reveal here — it stays muted through the whole
+    // video phase and only becomes audible at endIntro (natural sofa
+    // end or skip), so it never overlaps with the video audio.
     chairsPlayTimer = setTimeout(() => {
       chairsVid.classList.add('is-playing');
       safePlay(chairsVid);
-      revealMusic();
     }, TITLE_REVEAL_MS + HOLD_MS + TITLE_FADE_MS);
 
     // Safety fallback — extended to cover the new title-card phase
