@@ -649,6 +649,14 @@ img, video { display: block; max-width: 100%; }
 /* Detail page is tall — align top so content scrolls naturally on phones */
 .confirm { align-items: flex-start; }
 
+/* On phones, the RSVP card is also taller than the viewport (header +
+   details + dress code + 3 fields + button + hint). Centering it
+   pushes the top off-screen. Pin to the top with padding for breathing
+   room. Desktop keeps the centered look since the card fits there. */
+@media (max-width: 759px) {
+  .rsvp { align-items: flex-start; }
+}
+
 .detail-page {
   position: relative;
   z-index: 1;

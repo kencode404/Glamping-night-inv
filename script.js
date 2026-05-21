@@ -136,14 +136,23 @@
   function endIntro() {
     if (intro.classList.contains('is-leaving')) return;
     intro.classList.add('is-leaving');
-    rsvp.classList.add('is-active');
-    rsvp.setAttribute('aria-hidden', 'false');
 
     // Cancel pending transitions if the user skipped during the title
     // card (otherwise the video would start playing in the background).
     clearTimeout(titleFadeTimer);
     clearTimeout(videoPlayTimer);
     clearTimeout(introTimer);
+
+    // Let the intro (video) fade FIRST, then bring the RSVP form in.
+    // Intro's CSS transition is 1.2s; activate the form near the end
+    // of that fade so it crossfades cleanly without competing with the
+    // video underneath. Scroll the form to top so its header is in
+    // view on phones where the form is taller than the viewport.
+    setTimeout(() => {
+      rsvp.classList.add('is-active');
+      rsvp.setAttribute('aria-hidden', 'false');
+      try { rsvp.scrollTo(0, 0); } catch (_) {}
+    }, 1000);
 
     // After fade, remove from layout
     setTimeout(() => intro.classList.add('is-done'), 1300);
