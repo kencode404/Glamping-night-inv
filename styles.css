@@ -87,18 +87,14 @@ img, video { display: block; max-width: 100%; }
   opacity: 0;
   transition: opacity 1.2s ease;
   pointer-events: none;
-  /* Asymmetric feathering. Top/bottom fade heavily (top hides the
-     baked-in 'Under The Stars' lockup that's part of the source clip;
-     bottom dissolves into the ambient backdrop). Left/right fade
-     gently so the cinematic width is preserved. */
-  -webkit-mask-image:
-    linear-gradient(to right,  transparent 0%, #000 7%,  #000 93%, transparent 100%),
-    linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
-          mask-image:
-    linear-gradient(to right,  transparent 0%, #000 7%,  #000 93%, transparent 100%),
-    linear-gradient(to bottom, transparent 0%, #000 30%, #000 70%, transparent 100%);
-  -webkit-mask-composite: source-in;
-          mask-composite: intersect;
+  /* Asymmetric feathering: heavy top/bottom fade (hides the baked-in
+     'Under The Stars' lockup, blends bottom into the backdrop), light
+     side fade. Single elliptical radial gradient instead of two
+     composited linear gradients — `mask-composite: intersect` only
+     landed in iOS Safari 18, so the old approach silently broke on
+     older iPhones. This works everywhere. */
+  -webkit-mask-image: radial-gradient(ellipse 200% 55% at center, #000 20%, transparent 95%);
+          mask-image: radial-gradient(ellipse 200% 55% at center, #000 20%, transparent 95%);
 }
 
 .hero-video.is-playing { opacity: 1; }

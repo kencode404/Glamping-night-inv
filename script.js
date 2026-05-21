@@ -20,6 +20,26 @@
 
   const safePlay = (v) => v && v.play().catch(() => { /* swallow */ });
 
+  // Mobile browsers (iOS Safari in particular) require each <video>
+  // element to be "activated" inside a user gesture before play() will
+  // work later. Calling play()+pause() during the gate tap primes the
+  // element so a deferred play() — like sofa starting 14s later —
+  // doesn't get blocked. We play muted to avoid an audible blip.
+  function primeVideo(video, startAt) {
+    if (!video) return;
+    try {
+      video.muted = true;
+      const p = video.play();
+      if (p && p.then) {
+        p.then(() => {
+          try { video.pause(); } catch (_) {}
+          try { video.currentTime = startAt || 0; } catch (_) {}
+          video.muted = false;
+        }).catch(() => { video.muted = false; });
+      }
+    } catch (_) { /* swallow */ }
+  }
+
   // Linear volume ramp to 0. No-op if muted or already silent.
   const fadeAudio = (video, durationMs) => {
     if (!video || video.muted || video.volume === 0) return;
@@ -96,9 +116,11 @@
     if (introStarted) return;
     introStarted = true;
 
-    // User gesture unlocks unmuted playback in all major browsers
-    try { chairsVid.muted = false; } catch (_) {}
-    try { sofaVid.muted = false; } catch (_) {}
+    // Prime BOTH videos inside the same user gesture so the sofa
+    // play() — fired ~14s later — isn't blocked by mobile browsers.
+    // primeVideo also leaves muted=false so later plays have audio.
+    primeVideo(chairsVid, 2);
+    primeVideo(sofaVid, 0);
 
     // Dismiss the gate and arm the title-card animations
     beginGate.classList.add('is-dismissing');
