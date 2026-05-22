@@ -1120,8 +1120,14 @@ img, video { display: block; max-width: 100%; }
   /* The big bottom padding / margin were clearance for the floating
      credit pill. With the inline credit on phone, that gap looks
      awkward — pull it back so the credit sits naturally below the
-     card with breathing room only. */
+     card with breathing room only.
+     Also flip flex direction to column so the inline credit stacks
+     BELOW the form/detail card (instead of beside it, which is what
+     the default flex-direction: row would do). */
   .rsvp, .confirm {
+    flex-direction: column;
+    justify-content: center;
+    justify-content: safe center;
     padding-bottom: calc(24px + env(safe-area-inset-bottom));
   }
   .rsvp-card, .details-signature { margin-bottom: 0; }
