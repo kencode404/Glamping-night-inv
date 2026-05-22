@@ -1086,6 +1086,47 @@ img, video { display: block; max-width: 100%; }
   opacity: 1;
 }
 
+/* In-flow credit copy that lives INSIDE each section's scrollable
+   content. Used on phones, where the floating credit pill at the
+   viewport bottom feels disconnected from the card it relates to.
+   On phones we hide the body-level .credit and let this one sit
+   naturally at the bottom of the form / detail content instead. */
+.credit-inline { display: none; }
+
+@media (max-width: 759px) {
+  /* Hide the floating pill — let the inline one take over. */
+  .credit { display: none; }
+
+  .credit-inline {
+    display: block;
+    margin: 24px auto 0;
+    padding: 8px 16px;
+    text-align: center;
+    background: rgba(11,13,16,0.55);
+    border: 1px solid rgba(214,179,122,0.25);
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    color: var(--gold-soft);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+    width: max-content;
+    max-width: calc(100% - 32px);
+  }
+
+  /* The big bottom padding / margin were clearance for the floating
+     credit pill. With the inline credit on phone, that gap looks
+     awkward — pull it back so the credit sits naturally below the
+     card with breathing room only. */
+  .rsvp, .confirm {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+  .rsvp-card, .details-signature { margin-bottom: 0; }
+}
+
 /* "Already reserved" modal, shown when the API returns 409 on submit.
    Sits above every other layer; the OK button closes it and drops the
    user into the detail page. */
