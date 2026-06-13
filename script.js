@@ -168,23 +168,9 @@
 
   /* ---------- 2) Detail page ---------- */
 
-  // Fetch the public guest list from the API (returns null on failure).
-  async function fetchGuestList() {
-    try {
-      const resp = await fetch('/api/rsvp', { method: 'GET' });
-      if (!resp.ok) return null;
-      const json = await resp.json();
-      return Array.isArray(json.guests) ? json.guests : null;
-    } catch (_) {
-      return null;
-    }
-  }
-
   // Reveal the detail page and populate the guest list.
   function showDetailPage() {
-    // Render whatever we have right now (fallback) so the transition
-    // isn't blocked by network latency, then backfill from the DB.
-    renderGuestList(null);
+    renderGuestList();
 
     // Toggle .is-active off → reflow → on so the staggered .reveal
     // transitions play. Combined with renderGuestList() recreating
@@ -196,70 +182,25 @@
       confirm.setAttribute('aria-hidden', 'false');
       try { confirm.scrollTo(0, 0); } catch (_) {}
     }, 1000);
-
-    fetchGuestList().then((guests) => {
-      if (guests) renderGuestList(guests);
-    });
   }
 
   /* ---------- 3) Guest list ----------
-     Source-of-truth is the /api/rsvp endpoint (Supabase on Vercel).
-     If the API returned a list (`serverGuests`), use it verbatim — that
-     is the real shared list. If not (local static dev, network drop),
-     fall back to a small set of seed names so the page never looks
-     empty. */
+     The list is hardcoded in guests.js (window.GUESTS). Only names are
+     shown on the page; allergies live in that data but are never
+     rendered here — they're only written into the downloaded CSV. */
 
-  const SEEDED_GUESTS = [
-    'Maria Lopez',
-    'James Chen',
-    'Sarah Williams',
-    'David Park',
-    'Emily Tan',
-  ];
-
-  // Format an ISO timestamp into a short, friendly label.
-  // Example output: "Jul 18 · 2:34 PM"
-  function formatRsvpTime(iso) {
-    if (!iso) return '';
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return '';
-    const date = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    const time = d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true });
-    return `${date} · ${time}`;
+  function getGuests() {
+    return Array.isArray(window.GUESTS) ? window.GUESTS : [];
   }
 
-  function renderGuestList(serverGuests) {
+  function renderGuestList() {
     const ol = document.getElementById('guestList');
     if (!ol) return;
 
-    let entries;
-    if (Array.isArray(serverGuests)) {
-      // API responded. Trust it verbatim — even an empty array means
-      // "database is genuinely empty," not "fall back to fake names."
-      entries = serverGuests
-        .map((g) => ({
-          name: g && g.name ? String(g.name).trim() : '',
-          time: g && g.created_at ? g.created_at : null,
-        }))
-        .filter((e) => e.name);
-    } else {
-      // No API response yet (initial render before fetch, local static
-      // dev, network drop) — seed names so the page never looks empty.
-      entries = SEEDED_GUESTS.map((name) => ({ name, time: null }));
-    }
-
-    // Case-insensitive dedupe
-    const seen = new Set();
-    const unique = entries.filter((e) => {
-      const key = e.name.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-
+    const guests = getGuests().filter((g) => g && g.name);
     ol.innerHTML = '';
 
-    if (!unique.length) {
+    if (!guests.length) {
       const empty = document.createElement('li');
       empty.className = 'guest-list-empty';
       empty.textContent = 'No guests yet';
@@ -267,27 +208,49 @@
       return;
     }
 
-    unique.forEach((entry, i) => {
+    guests.forEach((g, i) => {
       const li = document.createElement('li');
       li.style.setProperty('--i', i);
 
       const nameEl = document.createElement('span');
       nameEl.className = 'g-name';
-      nameEl.textContent = entry.name;
+      nameEl.textContent = g.name;
       li.appendChild(nameEl);
-
-      const label = formatRsvpTime(entry.time);
-      if (label) {
-        const timeEl = document.createElement('time');
-        timeEl.className = 'g-time';
-        timeEl.dateTime = entry.time;
-        timeEl.textContent = label;
-        li.appendChild(timeEl);
-      }
 
       ol.appendChild(li);
     });
   }
+
+  // Build a CSV (with the private allergy column) from the hardcoded
+  // guest list and trigger a download — entirely client-side, no server.
+  function csvEscape(value) {
+    if (value == null) return '';
+    const s = String(value);
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+
+  function downloadGuestCSV() {
+    const guests = getGuests().filter((g) => g && g.name);
+    const header = ['No.', 'Name', 'Phone', 'Food Allergy'];
+    const rows = guests.map((g, i) => [i + 1, g.name, g.phone || '', g.allergy || '']);
+    // Leading BOM so Excel opens the UTF-8 file cleanly.
+    const csv = '﻿' + [header, ...rows]
+      .map((r) => r.map(csvEscape).join(','))
+      .join('\r\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'rooftop-party-2026-guests.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  const downloadBtn = document.getElementById('downloadBtn');
+  if (downloadBtn) downloadBtn.addEventListener('click', downloadGuestCSV);
 
   /* ---------- 4) Live countdown to the event ----------
      Ticks every second. Local time interpretation — fine since the
