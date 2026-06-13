@@ -987,6 +987,7 @@ img, video { display: block; max-width: 100%; }
 /* Guest list */
 .guest-list {
   list-style: none;
+  counter-reset: guest;
   margin: 0;
   padding: 0;
   display: flex;
@@ -1000,20 +1001,25 @@ img, video { display: block; max-width: 100%; }
   font-family: var(--serif);
   font-size: 16px;
   color: var(--cream);
+  counter-increment: guest;
   opacity: 0;
   transform: translateY(8px);
   animation: guest-in 0.7s cubic-bezier(.2,.8,.2,1) forwards;
   /* per-name stagger after the card itself has revealed (--rd:4 → ~1.8s) */
   animation-delay: calc(var(--i, 0) * 0.12s + 2.1s);
 }
+/* Numbered marker: the running guest counter, gold, fixed-width so the
+   names stay left-aligned whether the number is 1 or 2 digits. */
 .guest-list li::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--gold);
-  opacity: 0.65;
+  content: counter(guest) ".";
   flex-shrink: 0;
+  min-width: 22px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold);
+  text-align: right;
 }
 .guest-list .g-name {
   flex: 1 1 auto;
@@ -1030,26 +1036,6 @@ img, video { display: block; max-width: 100%; }
   letter-spacing: 0.02em;
   color: rgba(243,230,207,0.5);
   white-space: nowrap;
-}
-.guest-list li.you { color: #fff; font-weight: 500; }
-.guest-list li.you::before {
-  width: 9px;
-  height: 9px;
-  opacity: 1;
-  box-shadow: 0 0 0 3px rgba(214,179,122,0.18);
-}
-.guest-list li.you .g-time { color: rgba(214,179,122,0.7); }
-.guest-list li.you::after {
-  content: "you";
-  font-family: var(--sans);
-  font-size: 9px;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
-  color: var(--gold);
-  background: rgba(214,179,122,0.15);
-  padding: 3px 9px;
-  border-radius: 999px;
-  flex-shrink: 0;
 }
 @keyframes guest-in {
   to { opacity: 1; transform: translateY(0); }

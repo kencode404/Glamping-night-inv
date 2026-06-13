@@ -1,14 +1,12 @@
 /* ================================================================
-   Rooftop Party 2026 — cinematic intro + RSVP flow
+   Rooftop Party 2026 — cinematic intro + detail page
    ================================================================ */
 
 (() => {
   const intro      = document.getElementById('intro');
-  const rsvp       = document.getElementById('rsvp');
   const confirm    = document.getElementById('confirm');
   const skipBtn    = document.getElementById('skipBtn');
   const beginGate  = document.getElementById('beginGate');
-  const form       = document.getElementById('rsvpForm');
   const introVid   = document.querySelector('.hero-video.intro-video');
   const introText  = document.querySelector('.intro-text');
   const bgMusic    = document.getElementById('bgMusic');
@@ -86,7 +84,7 @@
     primeVideo(introVid, 0);
 
     // Music plays continuously from the gate tap all the way through
-    // the title card, video, RSVP form, and detail page. Start it
+    // the title card, video, and detail page. Start it
     // synchronously inside the user gesture so mobile browsers permit
     // it. The fadeInVolume call ramps the volume up on browsers that
     // respect .volume; on iOS (read-only volume) the music just plays
@@ -150,16 +148,10 @@
     clearTimeout(videoPlayTimer);
     clearTimeout(introTimer);
 
-    // Let the intro (video) fade FIRST, then bring the RSVP form in.
-    // Intro's CSS transition is 1.2s; activate the form near the end
-    // of that fade so it crossfades cleanly without competing with the
-    // video underneath. Scroll the form to top so its header is in
-    // view on phones where the form is taller than the viewport.
-    setTimeout(() => {
-      rsvp.classList.add('is-active');
-      rsvp.setAttribute('aria-hidden', 'false');
-      try { rsvp.scrollTo(0, 0); } catch (_) {}
-    }, 1000);
+    // The RSVP window has closed — go straight to the detail page.
+    // Let the intro (video) fade FIRST, then bring the detail page in
+    // near the end of that 1.2s fade so it crossfades cleanly.
+    showDetailPage();
 
     // After fade, remove from layout
     setTimeout(() => intro.classList.add('is-done'), 1300);
@@ -174,13 +166,7 @@
 
   skipBtn.addEventListener('click', endIntro);
 
-  /* ---------- 2) RSVP form + page switching ---------- */
-
-  const phoneRe = /^[+\d][\d\s\-()]{6,}$/;
-
-  const viewDetailsBtn = document.getElementById('viewDetailsBtn');
-  const backToRsvpBtn  = document.getElementById('backToRsvpBtn');
-  const confirmName    = document.getElementById('confirmName');
+  /* ---------- 2) Detail page ---------- */
 
   // Fetch the public guest list from the API (returns null on failure).
   async function fetchGuestList() {
@@ -194,166 +180,34 @@
     }
   }
 
-  // Switch from the RSVP form to the detail page.
-  // - personalized: if truthy, show "Your seat is saved, <First>."; otherwise neutral preview header
-  // - serverGuests: optional list from a recent API call (e.g. POST response).
-  //   If absent, we render the fallback immediately and re-render with the
-  //   real database list as soon as GET /api/rsvp resolves.
-  function showDetailPage(personalized, serverGuests) {
-    if (personalized) {
-      const firstName = personalized.split(/\s+/)[0];
-      confirmName.textContent = `Your seat is saved, ${firstName}.`;
-    } else {
-      confirmName.textContent = 'All you need to know.';
-    }
-
-    // Render whatever we have right now so the transition isn't blocked
-    // by network latency. If serverGuests is null we'll backfill below.
-    renderGuestList(personalized || '', serverGuests);
-
-    rsvp.classList.remove('is-active');
-    rsvp.setAttribute('aria-hidden', 'true');
+  // Reveal the detail page and populate the guest list.
+  function showDetailPage() {
+    // Render whatever we have right now (fallback) so the transition
+    // isn't blocked by network latency, then backfill from the DB.
+    renderGuestList(null);
 
     // Toggle .is-active off → reflow → on so the staggered .reveal
-    // transitions replay each visit. Combined with renderGuestList()
-    // recreating the <li>s, the per-name animation also replays.
+    // transitions play. Combined with renderGuestList() recreating
+    // the <li>s, the per-name animation also plays.
     confirm.classList.remove('is-active');
     void confirm.offsetWidth;
     setTimeout(() => {
       confirm.classList.add('is-active');
       confirm.setAttribute('aria-hidden', 'false');
       try { confirm.scrollTo(0, 0); } catch (_) {}
-    }, 50);
+    }, 1000);
 
-    // Backfill from the database if we don't already have a fresh list.
-    if (!Array.isArray(serverGuests)) {
-      fetchGuestList().then((guests) => {
-        if (guests) renderGuestList(personalized || '', guests);
-      });
-    }
-  }
-
-  function showRsvpPage() {
-    confirm.classList.remove('is-active');
-    confirm.setAttribute('aria-hidden', 'true');
-    setTimeout(() => {
-      rsvp.classList.add('is-active');
-      rsvp.setAttribute('aria-hidden', 'false');
-      try { rsvp.scrollTo(0, 0); } catch (_) {}
-    }, 250);
-  }
-
-  if (viewDetailsBtn) viewDetailsBtn.addEventListener('click', () => showDetailPage('', null));
-  if (backToRsvpBtn)  backToRsvpBtn.addEventListener('click', showRsvpPage);
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const fields = {
-      name:  form.elements.name,
-      phone: form.elements.phone,
-    };
-
-    let firstInvalid = null;
-    Object.entries(fields).forEach(([key, input]) => {
-      const wrap = input.closest('.field');
-      const val  = input.value.trim();
-      let ok = val.length > 0;
-      if (key === 'phone') ok = phoneRe.test(val);
-
-      wrap.classList.toggle('has-error', !ok);
-      if (!ok && !firstInvalid) firstInvalid = input;
+    fetchGuestList().then((guests) => {
+      if (guests) renderGuestList(guests);
     });
-
-    if (firstInvalid) {
-      firstInvalid.focus();
-      return;
-    }
-
-    const allergyInput = form.elements.allergy;
-    const data = {
-      name:    fields.name.value.trim(),
-      phone:   fields.phone.value.trim(),
-      allergy: allergyInput ? allergyInput.value.trim() : '',
-    };
-
-    // Disable the button while we save
-    const submitBtn = form.querySelector('.submit-btn');
-    const originalLabel = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span>Reserving…</span>';
-
-    // POST to the shared RSVP store. If the API is unreachable (local
-    // static dev, network drop), we still proceed with the detail page
-    // using a local-only fallback so the user sees confirmation.
-    let serverGuests = null;
-    let duplicate    = false;
-    try {
-      const resp = await fetch('/api/rsvp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-      if (resp.status === 409) {
-        // Already in the DB. Use the list returned with the 409 so the
-        // detail page still shows the real shared list.
-        duplicate = true;
-        try {
-          const json = await resp.json();
-          if (Array.isArray(json.guests)) serverGuests = json.guests;
-        } catch (_) {}
-      } else if (resp.ok) {
-        const json = await resp.json();
-        if (Array.isArray(json.guests)) serverGuests = json.guests;
-      }
-    } catch (_) { /* swallow; fall through to local fallback */ }
-
-    // Also keep a local copy as a belt-and-braces backup
-    try {
-      const list = JSON.parse(localStorage.getItem('glampingRsvps') || '[]');
-      list.push({ ...data, at: new Date().toISOString() });
-      localStorage.setItem('glampingRsvps', JSON.stringify(list));
-    } catch (_) { /* ignore */ }
-
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = originalLabel;
-
-    if (duplicate) {
-      showDuplicateDialog(() => showDetailPage(data.name, serverGuests));
-    } else {
-      showDetailPage(data.name, serverGuests);
-    }
-  });
-
-  // Open the themed "already reserved" dialog. Calls onOk when the
-  // user clicks the OK button (closes the dialog first).
-  function showDuplicateDialog(onOk) {
-    const dialog = document.getElementById('dupDialog');
-    if (!dialog) {
-      // Element missing for any reason — fall back to native alert
-      // and run the callback so the flow doesn't stall.
-      try { window.alert("You're already on the list. We'll take you to the details now."); } catch (_) {}
-      if (onOk) onOk();
-      return;
-    }
-    const okBtn = dialog.querySelector('.dialog-ok');
-    dialog.classList.add('is-open');
-    dialog.setAttribute('aria-hidden', 'false');
-    const close = () => {
-      dialog.classList.remove('is-open');
-      dialog.setAttribute('aria-hidden', 'true');
-      okBtn.removeEventListener('click', close);
-      if (onOk) onOk();
-    };
-    okBtn.addEventListener('click', close);
   }
 
   /* ---------- 3) Guest list ----------
-     Source-of-truth is the /api/rsvp endpoint (Upstash Redis on Vercel).
+     Source-of-truth is the /api/rsvp endpoint (Supabase on Vercel).
      If the API returned a list (`serverGuests`), use it verbatim — that
      is the real shared list. If not (local static dev, network drop),
-     fall back to localStorage + a small set of seed names so the page
-     never looks empty. */
+     fall back to a small set of seed names so the page never looks
+     empty. */
 
   const SEEDED_GUESTS = [
     'Maria Lopez',
@@ -374,9 +228,9 @@
     return `${date} · ${time}`;
   }
 
-  function renderGuestList(currentName, serverGuests) {
-    const ul = document.getElementById('guestList');
-    if (!ul) return;
+  function renderGuestList(serverGuests) {
+    const ol = document.getElementById('guestList');
+    if (!ol) return;
 
     let entries;
     if (Array.isArray(serverGuests)) {
@@ -389,15 +243,9 @@
         }))
         .filter((e) => e.name);
     } else {
-      // No API response at all (local static dev, network drop) — use a
-      // local fallback so the page never looks broken or empty. No
-      // timestamps in this path; they only exist on database rows.
-      let local = [];
-      try {
-        const stored = JSON.parse(localStorage.getItem('glampingRsvps') || '[]');
-        local = stored.map((r) => (r && r.name ? r.name.trim() : '')).filter(Boolean).reverse();
-      } catch (_) { /* ignore */ }
-      entries = [...local, ...SEEDED_GUESTS].map((name) => ({ name, time: null }));
+      // No API response yet (initial render before fetch, local static
+      // dev, network drop) — seed names so the page never looks empty.
+      entries = SEEDED_GUESTS.map((name) => ({ name, time: null }));
     }
 
     // Case-insensitive dedupe
@@ -409,21 +257,19 @@
       return true;
     });
 
-    const currKey = (currentName || '').trim().toLowerCase();
-    ul.innerHTML = '';
+    ol.innerHTML = '';
 
     if (!unique.length) {
       const empty = document.createElement('li');
       empty.className = 'guest-list-empty';
-      empty.textContent = 'Be the first to RSVP';
-      ul.appendChild(empty);
+      empty.textContent = 'No guests yet';
+      ol.appendChild(empty);
       return;
     }
 
     unique.forEach((entry, i) => {
       const li = document.createElement('li');
       li.style.setProperty('--i', i);
-      if (currKey && entry.name.toLowerCase() === currKey) li.classList.add('you');
 
       const nameEl = document.createElement('span');
       nameEl.className = 'g-name';
@@ -439,16 +285,9 @@
         li.appendChild(timeEl);
       }
 
-      ul.appendChild(li);
+      ol.appendChild(li);
     });
   }
-
-  // Clear error state as user types
-  form.querySelectorAll('input').forEach((input) => {
-    input.addEventListener('input', () => {
-      input.closest('.field').classList.remove('has-error');
-    });
-  });
 
   /* ---------- 4) Live countdown to the event ----------
      Ticks every second. Local time interpretation — fine since the
