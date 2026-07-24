@@ -1,0 +1,503 @@
+/* ============================================================
+   Rooftop Party 2026 — Opening Ceremony (opening.html)
+   One button. One countdown. Fireworks.
+   ============================================================ */
+
+:root {
+  --gold: #d6b37a;
+  --gold-soft: #e8cda0;
+  --gold-deep: #a07f4e;
+  --cream: #f3e6cf;
+  --ink: #0b0d10;
+  --ink-2: #14181d;
+  --line: rgba(214, 179, 122, 0.45);
+  --serif: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+  --sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;                 /* single-viewport ceremony — nothing scrolls */
+  -webkit-tap-highlight-color: transparent;
+  /* The page invites rapid tapping ("tap anywhere"): kill iOS double-tap
+     smart-zoom and stray text selection / long-press callouts. */
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ============================================================
+   1) BACKDROP — day, then the night expands out of the button.
+      The night layer is revealed through a growing clip-path
+      circle aimed at the button's centre, animated frame by
+      frame in opening.js; browsers without clip-path support
+      fall back to a plain crossfade. body.is-night = pressed,
+      the night owns the screen; body.is-begun = celebration.
+   ============================================================ */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.backdrop > * { position: absolute; }
+
+.sky { inset: 0; }
+
+/* Golden hour — deep azure overhead melting into a warm gold haze
+   at the horizon, with a soft bloom around the sun. */
+.sky-day {
+  background:
+    radial-gradient(ellipse 62% 48% at 60% 40%,
+      rgba(255, 228, 160, 0.55) 0%,
+      rgba(255, 212, 142, 0.2) 45%,
+      transparent 70%),
+    linear-gradient(to top,
+      rgba(247, 219, 162, 0.9) 0%,
+      rgba(244, 206, 148, 0.3) 26%,
+      transparent 46%),
+    linear-gradient(to bottom,
+      #5e8ebc 0%, #85aac9 34%, #c2cec9 62%, #edd2a1 88%, #f7e3bd 100%);
+}
+
+/* The afternoon sun — bright core, wide warm bloom */
+.sun {
+  left: 60%;
+  top: 40%;
+  width: clamp(110px, 20vw, 190px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    #fffdf4 0%,
+    rgba(255, 243, 205, 0.9) 28%,
+    rgba(255, 219, 143, 0.5) 55%,
+    transparent 72%);
+  box-shadow:
+    0 0 60px 24px rgba(255, 238, 190, 0.75),
+    0 0 160px 80px rgba(255, 214, 140, 0.4);
+}
+
+/* Puffy clouds — layered soft blobs, faintly gold-lit from below */
+.cloud {
+  height: 14vh;
+  border-radius: 50%;
+  filter: blur(16px);
+  background:
+    radial-gradient(ellipse 45% 60% at 30% 62%, rgba(255, 255, 255, 0.9) 0%, transparent 70%),
+    radial-gradient(ellipse 52% 72% at 58% 38%, rgba(255, 255, 255, 0.75) 0%, transparent 72%),
+    radial-gradient(ellipse 42% 55% at 82% 66%, rgba(255, 249, 232, 0.65) 0%, transparent 70%);
+}
+.cloud.c1 { width: 44vw; left: 6%;  top: 15%; animation: drift 70s ease-in-out infinite alternate; }
+.cloud.c2 { width: 32vw; left: 56%; top: 30%; opacity: 0.72; animation: drift 90s ease-in-out infinite alternate-reverse; }
+.cloud.c3 { width: 22vw; left: 30%; top: 44%; opacity: 0.45; animation: drift 110s ease-in-out infinite alternate; }
+@keyframes drift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(9vw); }
+}
+
+/* Once the night has spread over them, quietly retire the day layers */
+body.is-night .sky-day,
+body.is-night .sun,
+body.is-night .cloud {
+  opacity: 0;
+  transition: opacity 0.8s ease 4.5s;   /* starts after the iris has covered them */
+}
+
+/* Night: ink sky + the blurred camp scene low on the horizon.
+   The photo's filter is STATIC (pre-rendered once) so the reveal
+   stays smooth; only the clip-path circle animates. */
+.sky-night {
+  background: var(--ink);
+  /* Fallback for browsers without clip-path: plain crossfade */
+  opacity: 0;
+  transition: opacity 4.5s ease;
+}
+body.is-night .sky-night { opacity: 1; }
+
+/* With clip-path support the reveal circle is driven by JS frame by
+   frame (opening.js) — a CSS transition here could be shortened by OS
+   or browser motion settings, which broke the slow spread. */
+@supports (clip-path: circle(10px at 10px 10px)) {
+  .sky-night {
+    opacity: 1;
+    clip-path: circle(0px at 50% 68%);
+  }
+}
+
+.sky-night::before {
+  content: "";
+  position: absolute;
+  inset: -10%;
+  background: url('assets/Glamping%20night%20scene.png') center 70%/cover no-repeat;
+  filter: blur(44px) brightness(0.62) saturate(1.35);
+  transition: transform 2s cubic-bezier(0.55, 0, 0.35, 1);
+}
+
+/* Warm glow rising from the camp once the night is open */
+.horizon-glow {
+  left: 50%;
+  bottom: -12%;
+  width: 140%;
+  height: 55%;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at 50% 100%,
+    rgba(214, 179, 122, 0.32) 0%,
+    rgba(214, 179, 122, 0.12) 40%,
+    transparent 72%);
+  opacity: 0;
+  transition: opacity 3.5s ease, transform 2s cubic-bezier(0.55, 0, 0.35, 1);
+}
+body.is-begun .horizon-glow { opacity: 1; }
+body.is-skyward .horizon-glow {
+  transform: translateX(-50%) translateY(55vh);
+  opacity: 0;
+  transition: opacity 1.5s ease, transform 2s cubic-bezier(0.55, 0, 0.35, 1);
+}
+
+#sky {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Barely-there in daylight, heavy once the night owns the screen */
+.vignette {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 55%, transparent 0%, transparent 40%, rgba(0,0,0,0.45) 82%, rgba(0,0,0,0.82) 100%),
+    linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 28%, transparent 65%, rgba(0,0,0,0.5) 100%);
+  opacity: 0.22;
+  transition: opacity 4.5s ease;
+  pointer-events: none;
+}
+body.is-night .vignette { opacity: 1; }
+
+/* ============================================================
+   2) STAGES — three fixed layers cross-fading over the sky
+   ============================================================ */
+
+.ceremony {
+  position: fixed;
+  inset: 0;
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding:
+    calc(24px + env(safe-area-inset-top))
+    calc(20px + env(safe-area-inset-right))
+    calc(24px + env(safe-area-inset-bottom))
+    calc(20px + env(safe-area-inset-left));
+  opacity: 0;
+  /* visibility (not just opacity) so hidden stages leave the
+     screen-reader tree and tab order — the flip is delayed until the
+     fade-out finishes, and is instant on fade-in. */
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.9s ease, visibility 0s linear 0.9s;
+}
+.stage.is-active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 0.9s ease, visibility 0s;
+}
+.stage:focus { outline: none; }   /* programmatic focus target (stage 3) */
+
+/* Shared type — mirrors the invitation's title card */
+.eyebrow {
+  margin: 0;
+  font-family: var(--sans);
+  text-transform: uppercase;
+  letter-spacing: 0.42em;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--gold-soft);
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.8);
+}
+
+.title {
+  margin: 16px 0 6px;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(40px, 8vw, 92px);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  color: #fff;
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.75);
+}
+
+.subtitle {
+  margin: 6px 0 0;
+  font-family: var(--serif);
+  font-size: clamp(13px, 1.6vw, 19px);
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--gold-soft);
+}
+
+.rule {
+  width: min(260px, 60vw);
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold), transparent);
+}
+.rule.top    { margin-top: 22px; }
+.rule.bottom { margin-top: 22px; }
+
+/* ---------- Stage 1: the stand ----------
+   This stage only ever exists in daylight — ink text on the bright
+   sky, warm halo instead of the night stages' dark text-shadow. */
+
+.stage-armed .eyebrow {
+  color: #5c4829;   /* dark bronze — --gold-deep is too faint on the day sky */
+  text-shadow: 0 1px 18px rgba(255, 250, 235, 0.8);
+  opacity: 0;
+  animation: fadeUp 1.2s ease 0.3s forwards;
+}
+.stage-armed .rule    { width: 0;    animation: rule-grow 1.6s ease 0.7s forwards; }
+.stage-armed .title   {
+  color: #222a34;
+  text-shadow: 0 2px 26px rgba(255, 250, 235, 0.7);
+  opacity: 0;
+  transform: translateY(14px);
+  animation: fadeUp 1.6s cubic-bezier(.2,.8,.2,1) 0.8s forwards;
+}
+
+.lede {
+  margin: 18px 0 0;
+  max-width: 560px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(16px, 2.2vw, 20px);
+  line-height: 1.7;
+  color: rgba(37, 45, 55, 0.85);
+  text-shadow: 0 1px 16px rgba(255, 250, 235, 0.7);
+  opacity: 0;
+  animation: fadeUp 1.4s ease 1.3s forwards;
+}
+
+/* The button — a small gold sun waiting to be pressed */
+.ignite-wrap {
+  position: relative;
+  margin-top: clamp(28px, 6vh, 56px);
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  animation: fadeUp 1.6s cubic-bezier(.2,.8,.2,1) 1.8s forwards;
+}
+
+.ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1px solid rgba(214, 179, 122, 0.5);
+  animation: ring-pulse 3s ease-out infinite;
+  pointer-events: none;
+}
+.ring.r2 { animation-delay: 1.5s; }
+@keyframes ring-pulse {
+  0%   { transform: scale(0.92); opacity: 0.7; }
+  100% { transform: scale(1.55); opacity: 0; }
+}
+
+.ignite-btn {
+  position: relative;
+  width: clamp(168px, 46vw, 208px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(circle at 50% 32%, rgba(214, 179, 122, 0.22), rgba(11, 13, 16, 0.55) 68%),
+    rgba(11, 13, 16, 0.55);
+  color: var(--cream);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow:
+    0 0 60px rgba(214, 179, 122, 0.22),
+    inset 0 0 34px rgba(214, 179, 122, 0.10);
+  animation: breathe 3.6s ease-in-out infinite;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.7s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 46px rgba(214,179,122,0.18), inset 0 0 34px rgba(214,179,122,0.08); }
+  50%      { box-shadow: 0 0 80px rgba(214,179,122,0.34), inset 0 0 40px rgba(214,179,122,0.16); }
+}
+@media (hover: hover) {
+  .ignite-btn:hover {
+    transform: scale(1.04);
+    box-shadow: 0 0 90px rgba(214, 179, 122, 0.4), inset 0 0 40px rgba(214, 179, 122, 0.18);
+  }
+}
+.ignite-btn:active { transform: scale(0.97); }
+.ignite-btn:focus-visible {
+  outline: 2px solid var(--gold-deep);
+  outline-offset: 6px;
+}
+
+.ignite-icon {
+  color: var(--gold);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.ignite-icon svg {
+  height: auto;
+  filter: drop-shadow(0 0 16px rgba(214, 179, 122, 0.55));
+}
+.ignite-icon .icon-star { width: clamp(30px, 9vw, 42px); }
+.ignite-icon .icon-tent { width: clamp(50px, 15vw, 70px); }
+
+/* Pressed: the button flares and dissolves as the night bursts out of it */
+body.is-night .ignite-btn {
+  transform: scale(1.18);
+  opacity: 0;
+  pointer-events: none;
+}
+body.is-night .ring { animation: none; opacity: 0; }
+
+/* ---------- Stage 2: the declaration ---------- */
+
+/* Staggered reveal once body.is-begun lands */
+.b-eyebrow, .b-title, .b-subtitle, .b-dateline { opacity: 0; }
+.b-rule { width: 0; }
+
+body.is-begun .b-eyebrow  { animation: fadeUp 1.4s ease 0.5s forwards; }
+body.is-begun .b-rule.top { animation: rule-grow 1.6s ease 0.8s forwards; }
+body.is-begun .b-title    { transform: translateY(14px); animation: fadeUp 1.6s cubic-bezier(.2,.8,.2,1) 0.9s forwards; }
+body.is-begun .b-subtitle { animation: fadeUp 1.4s ease 1.4s forwards; }
+body.is-begun .b-rule.bottom { animation: rule-grow 1.6s ease 1.5s forwards; }
+body.is-begun .b-dateline { animation: fadeUp 1.4s ease 1.9s forwards; }
+
+.dateline {
+  margin: 20px 0 0;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(243, 230, 207, 0.75);
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
+}
+
+/* ---------- Skyward: the camera tilts up into the stars ----------
+   A few seconds after the declaration, everything terrestrial sinks
+   below the frame (looking up = the world moves down) while the JS
+   pans and thickens the star field. */
+
+body.is-skyward .stage-begun {
+  transform: translateY(60vh);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform 1.9s cubic-bezier(0.55, 0, 0.35, 1),
+    opacity 1.5s ease 0.2s,
+    visibility 0s linear 1.9s;
+}
+
+body.is-skyward .sky-night::before {
+  transform: translateY(70vh);   /* the camp drops out of frame */
+}
+
+/* ============================================================
+   3) CHROME — back link + credit
+   ============================================================ */
+
+.back-link {
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top));
+  left: calc(16px + env(safe-area-inset-left));
+  z-index: 20;
+  padding: 10px 16px;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--gold-soft);
+  border: 1px solid rgba(214, 179, 122, 0.28);
+  border-radius: 999px;
+  font: 500 10px/1 var(--sans);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  text-decoration: none;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  animation: fadeUp 1.2s ease 2.2s forwards;
+  transition: opacity 0.8s ease, background 0.25s ease, color 0.25s ease;
+}
+@media (hover: hover) {
+  .back-link:hover { background: rgba(0, 0, 0, 0.55); color: #fff; }
+}
+/* Once the ceremony starts, the chrome bows out — visibility flips
+   after the fade so the invisible link also leaves the tab order. */
+body.is-night .back-link {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  animation: none;
+  transition: opacity 0.8s ease, visibility 0s linear 0.8s;
+}
+
+/* ============================================================
+   4) SHARED KEYFRAMES + SMALL SCREENS + REDUCED MOTION
+   ============================================================ */
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes rule-grow { to { width: min(260px, 60vw); } }
+
+@media (max-width: 480px) {
+  .lede br { display: none; }        /* let the line wrap naturally */
+  .stage-armed .title { font-size: clamp(36px, 11vw, 48px); }
+}
+
+/* Short landscape phones: shrink the ceremony so the button fits */
+@media (max-height: 520px) {
+  .stage-armed .title { font-size: clamp(28px, 6vh, 44px); }
+  .lede { display: none; }
+  .ignite-wrap { margin-top: 16px; }
+  .ignite-btn { width: clamp(120px, 30vh, 160px); padding: 10px; gap: 4px; }
+  .ignite-icon { gap: 2px; }
+  .ignite-icon .icon-star { width: clamp(20px, 7vh, 28px); }
+  .ignite-icon .icon-tent { width: clamp(34px, 12vh, 50px); }
+}
+
+/* No prefers-reduced-motion block on purpose: this page is a
+   single-purpose cinematic for the party, and OS "animations off"
+   settings were collapsing the ceremony to a blink. */

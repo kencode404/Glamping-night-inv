@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0d10" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Opening Ceremony — Rooftop Party 2026</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="apple-touch-icon" href="favicon.svg" />
+  <meta name="description" content="The Opening Ceremony of A Glamping Night — one button, one moment, and the night officially begins." />
+
+  <!-- Link preview -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Rooftop Party 2026" />
+  <meta property="og:title" content="Opening Ceremony — Rooftop Party 2026" />
+  <meta property="og:description" content="One button. One moment. The Glamping Night officially begins." />
+  <meta property="og:url" content="https://glamping-night-inv.vercel.app/opening.html" />
+  <meta property="og:image" content="https://glamping-night-inv.vercel.app/assets/link-preview2.jpeg" />
+  <meta property="og:image:secure_url" content="https://glamping-night-inv.vercel.app/assets/link-preview2.jpeg" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="853" />
+  <meta property="og:image:alt" content="Rooftop Party 2026 — Opening Ceremony" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Opening Ceremony — Rooftop Party 2026" />
+  <meta name="twitter:description" content="One button. One moment. The Glamping Night officially begins." />
+  <meta name="twitter:image" content="https://glamping-night-inv.vercel.app/assets/link-preview2.jpeg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="opening.css" />
+</head>
+<body>
+
+  <!-- The sky is the show: a golden afternoon until the button is
+       pressed — then the NIGHT EXPANDS OUT OF THE BUTTON ITSELF (a
+       growing clip-path circle animated frame by frame in opening.js),
+       stars sprinkle in and drift slowly west, and then the fireworks
+       begin. Everything luminous draws on the canvas. -->
+  <div class="backdrop" aria-hidden="true">
+    <div class="sky sky-day"></div>
+    <div class="sun"></div>
+    <div class="cloud c1"></div>
+    <div class="cloud c2"></div>
+    <div class="cloud c3"></div>
+    <div class="sky sky-night"></div>
+    <div class="horizon-glow"></div>
+  </div>
+  <canvas id="sky" aria-hidden="true"></canvas>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <a class="back-link" href="index.html">‹ Invitation</a>
+
+  <main class="ceremony">
+
+    <!-- STAGE 1 — the ceremony stand: title card + the button -->
+    <section id="stageArmed" class="stage stage-armed is-active" aria-label="Opening ceremony">
+      <p class="eyebrow">Rooftop Party 2026 · 25 July</p>
+      <div class="rule top"></div>
+      <h1 class="title">Opening Ceremony</h1>
+      <p class="lede">
+        Every unforgettable night begins with a single moment.<br />
+        When everyone is gathered — press the button, and bring on the night.
+      </p>
+
+      <div class="ignite-wrap">
+        <span class="ring r1" aria-hidden="true"></span>
+        <span class="ring r2" aria-hidden="true"></span>
+        <button id="igniteBtn" class="ignite-btn" type="button"
+                aria-label="Begin the Night (sound will play)">
+          <span class="ignite-icon" aria-hidden="true">
+            <svg class="icon-star" viewBox="0 0 24 24" width="40" height="40">
+              <path fill="currentColor" d="M12 1.5l1.6 4.9L18.5 8l-4.9 1.6L12 14.5l-1.6-4.9L5.5 8l4.9-1.6L12 1.5zm6.5 11l1 3 3 1-3 1-1 3-1-3-3-1 3-1 1-3zm-13 1l1 2.5 2.5 1-2.5 1-1 2.5-1-2.5L3 17l2.5-1 1-2.5z"/>
+            </svg>
+            <svg class="icon-tent" viewBox="0 0 24 24" width="68" height="68">
+              <path fill="currentColor" d="M12 4.5 L21.5 20 H15.2 L12 12.4 L8.8 20 H2.5 Z"/>
+            </svg>
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <!-- STAGE 2 — the declaration -->
+    <section id="stageBegun" class="stage stage-begun" aria-label="The night has begun" tabindex="-1">
+      <p class="eyebrow b-eyebrow">It’s official</p>
+      <div class="rule b-rule top"></div>
+      <h2 class="title b-title">Let the Night Begin</h2>
+      <p class="subtitle b-subtitle">— A Glamping Night —</p>
+      <div class="rule b-rule bottom"></div>
+      <p class="dateline b-dateline">Saturday · 25 July 2026 · Rooftop, Bangunan Bei</p>
+    </section>
+
+  </main>
+
+  <script src="opening.js"></script>
+</body>
+</html>
