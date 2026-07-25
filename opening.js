@@ -656,7 +656,7 @@
 
   /* ---------- 5) The ceremony sequence ---------- */
 
-  const IRIS_MS = 2500;   // keep in sync with the 2.5s fallback/day-retire CSS timings
+  const IRIS_MS = 1500;   // keep in sync with the 1.5s fallback/day-retire CSS timings
 
   let counting = false;
   let begun    = false;
@@ -690,9 +690,9 @@
     nightStart = performance.now() + IRIS_MS * 0.55;   // stars sprinkle in mid-spread
     shootAt = performance.now() + IRIS_MS + 5000 + Math.random() * 5000;
 
-    // Timeline from the press: night covers at 2.5s, declaration +
-    // first fireworks at 3s, skyward at 7.5s (3s + 4.5s below).
-    setTimeout(openTheNight, 3000);
+    // Timeline from the press: night covers at 1.5s, declaration +
+    // first fireworks at 2s, skyward at 6.5s (2s + 4.5s below).
+    setTimeout(openTheNight, 2000);
   }
 
   function openTheNight() {

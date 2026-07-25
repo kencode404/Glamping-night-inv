@@ -97,7 +97,7 @@ html, body {
 body.is-night .sky-day,
 body.is-night .cloud {
   opacity: 0;
-  transition: opacity 0.8s ease 2.5s;   /* starts after the iris has covered them */
+  transition: opacity 0.8s ease 1.5s;   /* starts after the iris has covered them */
 }
 
 /* Night: ink sky + the blurred camp scene low on the horizon.
@@ -107,7 +107,7 @@ body.is-night .cloud {
   background: var(--ink);
   /* Fallback for browsers without clip-path: plain crossfade */
   opacity: 0;
-  transition: opacity 2.5s ease;
+  transition: opacity 1.5s ease;
 }
 body.is-night .sky-night { opacity: 1; }
 
@@ -167,7 +167,7 @@ body.is-skyward .horizon-glow {
     radial-gradient(ellipse at 50% 55%, transparent 0%, transparent 40%, rgba(0,0,0,0.45) 82%, rgba(0,0,0,0.82) 100%),
     linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 28%, transparent 65%, rgba(0,0,0,0.5) 100%);
   opacity: 0.22;
-  transition: opacity 2.5s ease;
+  transition: opacity 1.5s ease;
   pointer-events: none;
 }
 body.is-night .vignette { opacity: 1; }
