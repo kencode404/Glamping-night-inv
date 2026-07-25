@@ -70,6 +70,7 @@
   const rockets = [];
   const sparks  = [];
   const embers  = [];
+  const smokes  = [];   // the falling moon's smoke tail + crash dust
 
   const MAX_SPARKS = 1200;
 
@@ -268,11 +269,11 @@
     // left until it drops off the bottom edge, where the physical
     // stage moon "catches" it. One pass only.
     if (skyward && !moon && now > moonAt) {
-      const R = Math.min(120, Math.max(48, W * 0.085));
+      const R = Math.min(85, Math.max(38, W * 0.06));
       const sx = W + R;
       const sy = -R * 1.5;
-      const T = 540;                        // ~9s of fall at 60fps
-      const ex = W * 0.12;                  // exit: through the bottom, left of centre
+      const T = 400;                        // ~6.5s of fall at 60fps
+      const ex = -W * 0.05;                 // exit: off the bottom-left corner
       const ey = H + R * 2;
       const vy0 = ((ey - sy) / T) * 0.45;   // slow start…
       moon = {
@@ -283,17 +284,29 @@
       };
     }
     if (moon) {
+      // Fully erase last frame's moon + halo first — the global trail
+      // fade only partially clears, which smeared the opaque disc into
+      // an ugly growing blob and let the halo accumulate.
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+      ctx.beginPath();
+      ctx.arc(moon.x, moon.y, moon.R * 1.9, 0, TAU);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'lighter';
+
       moon.vy += moon.g * dt;
       moon.x += moon.vx * dt;
       moon.y += moon.vy * dt;
       const R = moon.R;
+      const vmag = Math.hypot(moon.vx, moon.vy) || 1;
+      const mux = moon.vx / vmag, muy = moon.vy / vmag;   // unit forward
 
-      // Cool moonlight halo (additive, over the gold-toned night)
-      const halo = ctx.createRadialGradient(moon.x, moon.y, R * 0.6, moon.x, moon.y, R * 2.6);
-      halo.addColorStop(0, 'rgba(226, 236, 250, 0.32)');
-      halo.addColorStop(1, 'rgba(226, 236, 250, 0)');
+      // Warm re-entry glow wrapping the whole body
+      const halo = ctx.createRadialGradient(moon.x, moon.y, R * 0.6, moon.x, moon.y, R * 1.8);
+      halo.addColorStop(0, 'rgba(255, 220, 170, 0.3)');
+      halo.addColorStop(1, 'rgba(255, 200, 140, 0)');
       ctx.beginPath();
-      ctx.arc(moon.x, moon.y, R * 2.6, 0, TAU);
+      ctx.arc(moon.x, moon.y, R * 1.8, 0, TAU);
       ctx.fillStyle = halo;
       ctx.fill();
 
@@ -351,11 +364,79 @@
 
       ctx.globalCompositeOperation = 'lighter';
 
-      // Gone below the stage — the physical moon takes over from here.
+      // White-hot friction glow on the leading edge
+      const lx = moon.x + mux * R * 0.6;
+      const ly = moon.y + muy * R * 0.6;
+      const heat = ctx.createRadialGradient(lx, ly, R * 0.1, lx, ly, R * 1.15);
+      heat.addColorStop(0, 'rgba(255, 195, 125, 0.4)');
+      heat.addColorStop(0.5, 'rgba(255, 150, 80, 0.18)');
+      heat.addColorStop(1, 'rgba(255, 150, 80, 0)');
+      ctx.beginPath();
+      ctx.arc(lx, ly, R * 1.15, 0, TAU);
+      ctx.fillStyle = heat;
+      ctx.fill();
+
+      // Fire streaming off into the wake (the global trail-fade
+      // stretches each fleck into a streak)
+      for (let i = 0; i < 3; i++) {
+        if (Math.random() < 0.7 * dt && sparks.length < MAX_SPARKS) {
+          const back = R * (0.55 + Math.random() * 0.8);
+          const side = (Math.random() - 0.5) * R * 1.5;
+          sparks.push({
+            x: moon.x - mux * back - muy * side,
+            y: moon.y - muy * back + mux * side,
+            vx: moon.vx * 0.3 + (Math.random() * 0.6 - 0.3),
+            vy: moon.vy * 0.3 - (0.2 + Math.random() * 0.4),
+            gravity: -0.008, drag: 0.96,
+            life: 25 + Math.random() * 30, age: 0,
+            hue: 25 + Math.random() * 20, r: 1.1 + Math.random() * 1.4,
+            crackle: false, flash: false,
+          });
+        }
+      }
+
+      // Smoke billowing out behind, past the fire
+      if (Math.random() < 0.9 * dt && smokes.length < 80) {
+        const back = R * (1.7 + Math.random() * 0.9);
+        const side = (Math.random() - 0.5) * R * 1.2;
+        smokes.push({
+          x: moon.x - mux * back - muy * side,
+          y: moon.y - muy * back + mux * side,
+          vx: -mux * 0.4 + (Math.random() - 0.5) * 0.3,
+          vy: -muy * 0.4 - 0.15,
+          r: R * (0.22 + Math.random() * 0.16),
+          grow: 0.35 + Math.random() * 0.3,
+          age: 0, life: 90 + Math.random() * 60,
+        });
+      }
+
+      // Gone below the stage — impact! The physical moon takes over.
       if (moon.y - R > H || moon.x < -R * 2) {
         moon = null;
         moonAt = Infinity;
+        moonImpact();
       }
+    }
+
+    // Smoke puffs: translucent grey, expanding and thinning as they
+    // drift — they outlive the moon, hanging in the air after the crash.
+    if (smokes.length) {
+      ctx.globalCompositeOperation = 'source-over';
+      for (let i = smokes.length - 1; i >= 0; i--) {
+        const s = smokes[i];
+        s.age += dt;
+        if (s.age >= s.life) { smokes.splice(i, 1); continue; }
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.r += s.grow * dt;
+        const t = s.age / s.life;
+        const a = 0.16 * Math.min(1, s.age / 14) * (1 - t);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, TAU);
+        ctx.fillStyle = 'rgba(148, 145, 155, ' + a + ')';
+        ctx.fill();
+      }
+      ctx.globalCompositeOperation = 'lighter';
     }
 
     // Rockets — bright heads rising; the frame-fade paints their tails
@@ -526,7 +607,45 @@
       } catch (_) {}
     }
 
-    return { resume, launch, boom };
+    // Deep decaying rumble for the moon's landing — sub sine drop
+    // plus low-passed noise, like thunder through the floor.
+    function rumble() {
+      if (!ensure()) return;
+      try {
+        const t = ac.currentTime;
+        const g = ac.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.55, t + 0.06);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+        g.connect(master);
+
+        const n = ac.createBufferSource();
+        n.buffer = noiseBuf;
+        n.loop = true;
+        const f = ac.createBiquadFilter();
+        f.type = 'lowpass';
+        f.frequency.setValueAtTime(140, t);
+        f.frequency.exponentialRampToValueAtTime(45, t + 1.2);
+        n.connect(f);
+        f.connect(g);
+        n.start(t);
+        n.stop(t + 1.4);
+
+        const o = ac.createOscillator();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(60, t);
+        o.frequency.exponentialRampToValueAtTime(24, t + 1.1);
+        const og = ac.createGain();
+        og.gain.setValueAtTime(0.5, t);
+        og.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+        o.connect(og);
+        og.connect(g);
+        o.start(t);
+        o.stop(t + 1.3);
+      } catch (_) {}
+    }
+
+    return { resume, launch, boom, rumble };
   })();
 
   /* ---------- 5) The ceremony sequence ---------- */
@@ -626,6 +745,42 @@
         drift: 0.02 + r * 0.05,
         glint: 0,
         born: performance.now(),
+      });
+    }
+  }
+
+  // The moon hits the ground below the frame: the whole view shudders,
+  // a deep rumble rolls through, and debris kicks up from the corner —
+  // the cue for the physical stage moon to light.
+  function moonImpact() {
+    body.classList.add('is-quake');
+    setTimeout(() => body.classList.remove('is-quake'), 1000);
+    sound.rumble();
+    const ix = Math.max(30, W * 0.04);
+    for (let i = 0; i < 26; i++) {
+      if (sparks.length > MAX_SPARKS) break;
+      sparks.push({
+        x: ix + Math.random() * 60 - 20,
+        y: H + 6,
+        vx: Math.random() * 3 - 0.8,
+        vy: -(2 + Math.random() * 4),
+        gravity: 0.09, drag: 0.985,
+        life: 45 + Math.random() * 30, age: 0,
+        hue: 40 + Math.random() * 10, r: 1 + Math.random() * 1.6,
+        crackle: false, flash: false,
+      });
+    }
+    // …and a cloud of dust rising from the crash site
+    for (let i = 0; i < 12; i++) {
+      if (smokes.length > 90) break;
+      smokes.push({
+        x: ix + Math.random() * 120 - 30,
+        y: H + 10,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: -(0.4 + Math.random() * 0.7),
+        r: 14 + Math.random() * 18,
+        grow: 0.5 + Math.random() * 0.4,
+        age: 0, life: 110 + Math.random() * 70,
       });
     }
   }
