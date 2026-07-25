@@ -614,7 +614,7 @@
     }
 
     // Low sustained ground-shiver for the fall — quiet rumbling that
-    // builds as the moon comes down; stopped by the impact rumble.
+    // builds as the moon comes down; cut off at the impact.
     let tremorNodes = null;
     function tremor() {
       if (!ensure()) return;
@@ -651,50 +651,12 @@
       tremorNodes = null;
     }
 
-    // Deep decaying rumble for the moon's landing — sub sine drop
-    // plus low-passed noise, like thunder through the floor.
-    function rumble() {
-      if (!ensure()) return;
-      try {
-        const t = ac.currentTime;
-        const g = ac.createGain();
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(0.55, t + 0.06);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
-        g.connect(master);
-
-        const n = ac.createBufferSource();
-        n.buffer = noiseBuf;
-        n.loop = true;
-        const f = ac.createBiquadFilter();
-        f.type = 'lowpass';
-        f.frequency.setValueAtTime(140, t);
-        f.frequency.exponentialRampToValueAtTime(45, t + 1.2);
-        n.connect(f);
-        f.connect(g);
-        n.start(t);
-        n.stop(t + 1.4);
-
-        const o = ac.createOscillator();
-        o.type = 'sine';
-        o.frequency.setValueAtTime(60, t);
-        o.frequency.exponentialRampToValueAtTime(24, t + 1.1);
-        const og = ac.createGain();
-        og.gain.setValueAtTime(0.5, t);
-        og.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
-        o.connect(og);
-        og.connect(g);
-        o.start(t);
-        o.stop(t + 1.3);
-      } catch (_) {}
-    }
-
-    return { resume, launch, boom, rumble, tremor, tremorStop };
+    return { resume, launch, boom, tremor, tremorStop };
   })();
 
   /* ---------- 5) The ceremony sequence ---------- */
 
-  const IRIS_MS = 4500;   // must match the .sky-night clip-path transition
+  const IRIS_MS = 2500;   // keep in sync with the 2.5s fallback/day-retire CSS timings
 
   let counting = false;
   let begun    = false;
@@ -728,8 +690,9 @@
     nightStart = performance.now() + IRIS_MS * 0.55;   // stars sprinkle in mid-spread
     shootAt = performance.now() + IRIS_MS + 5000 + Math.random() * 5000;
 
-    // Once the night has the screen, the celebration begins.
-    setTimeout(openTheNight, IRIS_MS + 250);
+    // Timeline from the press: night covers at 2.5s, declaration +
+    // first fireworks at 3s, skyward at 7.5s (3s + 4.5s below).
+    setTimeout(openTheNight, 3000);
   }
 
   function openTheNight() {
@@ -760,7 +723,7 @@
 
     // The finale: once the words have landed and a few bursts have
     // bloomed, tilt the camera up into the stars.
-    setTimeout(goSkyward, 6500);
+    setTimeout(goSkyward, 4500);
   }
 
   // Looking up: everything terrestrial sinks below the frame (CSS),
@@ -773,7 +736,7 @@
     panning = true;
     panStart = performance.now();
     panPrev = 0;
-    moonAt = performance.now() + 4200;    // the moon falls once the camera settles
+    moonAt = performance.now() + 3400;    // the moon falls once the camera settles
     // Thicken the heavens — extra stars across the full height,
     // fading in as the camera settles.
     const extra = Math.round((W * H) / 2400);
@@ -793,15 +756,15 @@
     }
   }
 
-  // The moon hits the ground below the frame: the whole view shudders,
-  // a deep rumble rolls through, and debris kicks up from the corner —
-  // the cue for the physical stage moon to light.
+  // The moon hits the ground below the frame: the whole view shudders
+  // and debris kicks up from the corner — the cue for the physical
+  // stage moon to light. (Impact is silent by design; the falling
+  // tremor sound simply cuts out.)
   function moonImpact() {
     body.classList.remove('is-tremor', 'is-tremor-2');
     body.classList.add('is-quake');
     setTimeout(() => body.classList.remove('is-quake'), 1100);
     sound.tremorStop();
-    sound.rumble();
     const ix = Math.max(30, W * 0.04);
     for (let i = 0; i < 26; i++) {
       if (sparks.length > MAX_SPARKS) break;
