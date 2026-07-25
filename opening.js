@@ -157,7 +157,17 @@
   let irisStart = 0, irisFX = 0.5, irisFY = 0.68;
   let skyward = false;   // final act: gazing up into the stars
   let panning = false, panStart = 0, panPrev = 0;
-  let comet = null, cometAt = Infinity;
+  // The moon falls ONCE, top-right to bottom-left — it "lands" on
+  // stage, where the physical artificial moon lights up on cue.
+  let moon = null, moonAt = Infinity;
+  const MOON_CRATERS = [
+    { ox: -0.32, oy: -0.18, r: 0.16 },
+    { ox:  0.18, oy:  0.05, r: 0.11 },
+    { ox: -0.05, oy:  0.30, r: 0.13 },
+    { ox:  0.30, oy: -0.32, r: 0.08 },
+    { ox:  0.05, oy: -0.12, r: 0.06 },
+    { ox: -0.28, oy:  0.14, r: 0.07 },
+  ];
 
   function frame(now) {
     // Normalize to 60fps ticks; clamp so a background tab doesn't
@@ -196,7 +206,7 @@
       for (const e of embers)  e.y += dy;
       for (const rk of rockets) { rk.y += dy; rk.ty += dy; }
       if (shoot) shoot.y += dy;
-      if (comet) comet.y += dy;
+      if (moon) moon.y += dy;
       if (t >= 1) panning = false;
     }
 
@@ -254,62 +264,97 @@
       }
     }
 
-    // The big comet — top right to bottom left across the finale sky:
-    // bright core, long gradient tail, sparkles shed along the way.
-    if (skyward && !comet && now > cometAt) {
-      const sx = W * (0.88 + Math.random() * 0.17);
-      const sy = -40;
-      const tx = -W * 0.12;
-      const ty = H * (0.55 + Math.random() * 0.3);
-      const frames = 200 + Math.random() * 50;      // ~3.5–4s crossing
-      comet = { x: sx, y: sy, vx: (tx - sx) / frames, vy: (ty - sy) / frames };
+    // The moon fall — enters top right, gravity carries it down and
+    // left until it drops off the bottom edge, where the physical
+    // stage moon "catches" it. One pass only.
+    if (skyward && !moon && now > moonAt) {
+      const R = Math.min(120, Math.max(48, W * 0.085));
+      const sx = W + R;
+      const sy = -R * 1.5;
+      const T = 540;                        // ~9s of fall at 60fps
+      const ex = W * 0.12;                  // exit: through the bottom, left of centre
+      const ey = H + R * 2;
+      const vy0 = ((ey - sy) / T) * 0.45;   // slow start…
+      moon = {
+        x: sx, y: sy, R,
+        vx: (ex - sx) / T,
+        vy: vy0,
+        g: (2 * ((ey - sy) - vy0 * T)) / (T * T),   // …gravity does the rest
+      };
     }
-    if (comet) {
-      comet.x += comet.vx * dt;
-      comet.y += comet.vy * dt;
-      const mag = Math.hypot(comet.vx, comet.vy) || 1;
-      const ux = comet.vx / mag, uy = comet.vy / mag;
-      const tailLen = Math.min(220, W * 0.25);
-      const tail = ctx.createLinearGradient(
-        comet.x, comet.y,
-        comet.x - ux * tailLen, comet.y - uy * tailLen
+    if (moon) {
+      moon.vy += moon.g * dt;
+      moon.x += moon.vx * dt;
+      moon.y += moon.vy * dt;
+      const R = moon.R;
+
+      // Cool moonlight halo (additive, over the gold-toned night)
+      const halo = ctx.createRadialGradient(moon.x, moon.y, R * 0.6, moon.x, moon.y, R * 2.6);
+      halo.addColorStop(0, 'rgba(226, 236, 250, 0.32)');
+      halo.addColorStop(1, 'rgba(226, 236, 250, 0)');
+      ctx.beginPath();
+      ctx.arc(moon.x, moon.y, R * 2.6, 0, TAU);
+      ctx.fillStyle = halo;
+      ctx.fill();
+
+      // The moon is a solid body — stop additive blending while we
+      // paint it (it must occlude the stars behind it).
+      ctx.globalCompositeOperation = 'source-over';
+
+      // Silvery disc lit from the upper right, cartoon-style
+      const disc = ctx.createRadialGradient(
+        moon.x + R * 0.25, moon.y - R * 0.3, R * 0.15,
+        moon.x, moon.y, R
       );
-      tail.addColorStop(0, 'rgba(255, 246, 222, 0.85)');
-      tail.addColorStop(0.25, 'rgba(232, 205, 160, 0.4)');
-      tail.addColorStop(1, 'rgba(232, 205, 160, 0)');
-      ctx.strokeStyle = tail;
-      ctx.lineWidth = 5;
-      ctx.lineCap = 'round';
+      disc.addColorStop(0, '#f4f6f8');
+      disc.addColorStop(0.7, '#e2e5ea');
+      disc.addColorStop(1, '#c6cbd3');
       ctx.beginPath();
-      ctx.moveTo(comet.x, comet.y);
-      ctx.lineTo(comet.x - ux * tailLen, comet.y - uy * tailLen);
+      ctx.arc(moon.x, moon.y, R, 0, TAU);
+      ctx.fillStyle = disc;
+      ctx.fill();
+      // bold outline, like the reference illustration
+      ctx.lineWidth = Math.max(2, R * 0.045);
+      ctx.strokeStyle = 'rgba(126, 135, 146, 0.85)';
       ctx.stroke();
-      // halo + white-hot core
-      ctx.beginPath();
-      ctx.arc(comet.x, comet.y, 9, 0, TAU);
-      ctx.fillStyle = 'rgba(255, 240, 205, 0.22)';
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(comet.x, comet.y, 3.2, 0, TAU);
-      ctx.fillStyle = 'rgba(255, 250, 235, 0.95)';
-      ctx.fill();
-      // sparkling dust falling off the tail
-      if (Math.random() < 0.5 * dt && sparks.length < MAX_SPARKS) {
-        const back = 10 + Math.random() * 70;
-        sparks.push({
-          x: comet.x - ux * back + (Math.random() * 8 - 4),
-          y: comet.y - uy * back + (Math.random() * 8 - 4),
-          vx: Math.random() * 0.6 - 0.3,
-          vy: Math.random() * 0.6 - 0.3,
-          gravity: 0.002, drag: 0.99,
-          life: 40 + Math.random() * 30, age: 0,
-          hue: 45, r: 0.7 + Math.random() * 0.8,
-          crackle: false, flash: false,
-        });
+
+      // Rimmed craters: raised light rim, darker offset floor
+      for (const c of MOON_CRATERS) {
+        const cx = moon.x + c.ox * R;
+        const cy = moon.y + c.oy * R;
+        const cr = c.r * R;
+        ctx.beginPath();
+        ctx.arc(cx, cy, cr, 0, TAU);
+        ctx.fillStyle = '#eff1f4';
+        ctx.fill();
+        ctx.lineWidth = Math.max(1, cr * 0.12);
+        ctx.strokeStyle = 'rgba(126, 135, 146, 0.5)';
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(cx + cr * 0.08, cy + cr * 0.12, cr * 0.72, 0, TAU);
+        ctx.fillStyle = '#c2c8d1';
+        ctx.fill();
       }
-      if (comet.x < -tailLen - 60 || comet.y > H + 60) {
-        comet = null;
-        cometAt = now + 25000 + Math.random() * 20000;   // rare encore
+
+      // Soft limb shading away from the light for roundness
+      const shade = ctx.createRadialGradient(
+        moon.x + R * 0.35, moon.y - R * 0.35, R * 0.2,
+        moon.x, moon.y, R * 1.05
+      );
+      shade.addColorStop(0, 'rgba(90, 100, 115, 0)');
+      shade.addColorStop(0.75, 'rgba(90, 100, 115, 0)');
+      shade.addColorStop(1, 'rgba(90, 100, 115, 0.3)');
+      ctx.beginPath();
+      ctx.arc(moon.x, moon.y, R, 0, TAU);
+      ctx.fillStyle = shade;
+      ctx.fill();
+
+      ctx.globalCompositeOperation = 'lighter';
+
+      // Gone below the stage — the physical moon takes over from here.
+      if (moon.y - R > H || moon.x < -R * 2) {
+        moon = null;
+        moonAt = Infinity;
       }
     }
 
@@ -499,18 +544,7 @@
     // so the firework booms are allowed to play.
     sound.resume();
     igniteBtn.blur();   // don't leave focus stranded on the dissolving button
-
-    // Take the whole screen for the show — allowed only inside this
-    // tap. iPhones don't support page fullscreen; they simply skip it.
-    try {
-      const el = document.documentElement;
-      if (el.requestFullscreen) {
-        const p = el.requestFullscreen();
-        if (p && p.catch) p.catch(() => {});
-      } else if (el.webkitRequestFullscreen) {
-        el.webkitRequestFullscreen();
-      }
-    } catch (_) {}
+    goFullscreen();     // in case this press is the first touch of the page
 
     // Aim the night at the button's centre — stored as viewport
     // fractions (see the frame loop) so it expands out of the tap
@@ -576,7 +610,7 @@
     panning = true;
     panStart = performance.now();
     panPrev = 0;
-    cometAt = performance.now() + 4200;   // the comet, once the camera settles
+    moonAt = performance.now() + 4200;    // the moon falls once the camera settles
     // Thicken the heavens — extra stars across the full height,
     // fading in as the camera settles.
     const extra = Math.round((W * H) / 2400);
@@ -614,6 +648,34 @@
       scheduleAutoShow();
     }, 2600 + Math.random() * 2800);
   }
+
+  /* ---------- Fullscreen: first tap enters, double-click exits ----------
+     Browsers only allow fullscreen inside a user gesture, so "from the
+     beginning" means the first touch anywhere on the page. iPhones
+     don't support page fullscreen and simply skip it. */
+
+  function goFullscreen() {
+    try {
+      if (document.fullscreenElement || document.webkitFullscreenElement) return;
+      const el = document.documentElement;
+      if (el.requestFullscreen) {
+        const p = el.requestFullscreen();
+        if (p && p.catch) p.catch(() => {});
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      }
+    } catch (_) {}
+  }
+  window.addEventListener('pointerdown', goFullscreen);
+  window.addEventListener('dblclick', () => {
+    try {
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        const exit = document.exitFullscreen || document.webkitExitFullscreen;
+        const p = exit.call(document);
+        if (p && p.catch) p.catch(() => {});
+      }
+    } catch (_) {}
+  });
 
   igniteBtn.addEventListener('click', startCeremony);
 
