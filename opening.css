@@ -270,19 +270,6 @@ body.is-night .vignette { opacity: 1; }
   animation: fadeUp 1.6s cubic-bezier(.2,.8,.2,1) 0.8s forwards;
 }
 
-.lede {
-  margin: 18px 0 0;
-  max-width: min(760px, 85vw);
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: clamp(17px, 2.4vw, 28px);
-  line-height: 1.7;
-  color: rgba(37, 45, 55, 0.85);
-  text-shadow: 0 1px 16px rgba(255, 250, 235, 0.7);
-  opacity: 0;
-  animation: fadeUp 1.4s ease 1.3s forwards;
-}
-
 /* The button — a small gold sun waiting to be pressed */
 .ignite-wrap {
   position: relative;
@@ -464,14 +451,12 @@ body.is-skyward .sky-night::before {
 @keyframes rule-grow { to { width: min(260px, 60vw); } }
 
 @media (max-width: 480px) {
-  .lede br { display: none; }        /* let the line wrap naturally */
   .stage-armed .title { font-size: clamp(36px, 11vw, 48px); }
 }
 
 /* Short landscape phones: shrink the ceremony so the button fits */
 @media (max-height: 520px) {
   .stage-armed .title { font-size: clamp(28px, 6vh, 44px); }
-  .lede { display: none; }
   .ignite-wrap { margin-top: 16px; }
   .ignite-btn { width: clamp(120px, 30vh, 160px); padding: 10px; gap: 4px; }
   .ignite-icon { gap: 2px; }
@@ -479,22 +464,38 @@ body.is-skyward .sky-night::before {
   .ignite-icon .icon-tent { width: clamp(34px, 12vh, 50px); }
 }
 
-/* The moon's landing: a decaying whole-screen shudder. body is the
-   containing block for every fixed layer, so one transform moves the
-   entire scene together; the exposed edges are the same ink as the
-   backdrop. */
-body.is-quake { animation: quake 0.9s cubic-bezier(.36,.07,.19,.97); }
+/* While the moon falls the whole scene trembles beneath it — gently
+   at first, harder as it nears the ground. body is the containing
+   block for every fixed layer, so one transform shakes the entire
+   scene together; exposed edges are the same ink as the backdrop. */
+body.is-tremor { animation: tremor 0.16s linear infinite; }
+@keyframes tremor {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  25%      { transform: translate3d(1.5px, -1px, 0); }
+  50%      { transform: translate3d(-1.5px, 1.2px, 0); }
+  75%      { transform: translate3d(1px, 1.4px, 0); }
+}
+body.is-tremor.is-tremor-2 { animation: tremor2 0.13s linear infinite; }
+@keyframes tremor2 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  25%      { transform: translate3d(3.5px, -2.5px, 0); }
+  50%      { transform: translate3d(-3.5px, 3px, 0); }
+  75%      { transform: translate3d(2.5px, 3.2px, 0); }
+}
+
+/* The landing: a much bigger decaying shudder */
+body.is-quake { animation: quake 1s cubic-bezier(.36,.07,.19,.97); }
 @keyframes quake {
   0%, 100% { transform: translate3d(0, 0, 0); }
-  10% { transform: translate3d(-12px, 8px, 0); }
-  20% { transform: translate3d(14px, -6px, 0); }
-  30% { transform: translate3d(-10px, 10px, 0); }
-  40% { transform: translate3d(10px, -8px, 0); }
-  50% { transform: translate3d(-8px, 6px, 0); }
-  60% { transform: translate3d(8px, -4px, 0); }
-  70% { transform: translate3d(-5px, 4px, 0); }
-  80% { transform: translate3d(4px, -3px, 0); }
-  90% { transform: translate3d(-2px, 2px, 0); }
+  10% { transform: translate3d(-22px, 15px, 0); }
+  20% { transform: translate3d(26px, -12px, 0); }
+  30% { transform: translate3d(-19px, 18px, 0); }
+  40% { transform: translate3d(18px, -15px, 0); }
+  50% { transform: translate3d(-15px, 11px, 0); }
+  60% { transform: translate3d(14px, -8px, 0); }
+  70% { transform: translate3d(-9px, 7px, 0); }
+  80% { transform: translate3d(7px, -5px, 0); }
+  90% { transform: translate3d(-4px, 3px, 0); }
 }
 
 /* No prefers-reduced-motion block on purpose: this page is a

@@ -272,7 +272,7 @@
       const R = Math.min(85, Math.max(38, W * 0.06));
       const sx = W + R;
       const sy = -R * 1.5;
-      const T = 400;                        // ~6.5s of fall at 60fps
+      const T = 320;                        // ~5.3s of fall at 60fps
       const ex = -W * 0.05;                 // exit: off the bottom-left corner
       const ey = H + R * 2;
       const vy0 = ((ey - sy) / T) * 0.45;   // slow start…
@@ -282,6 +282,12 @@
         vy: vy0,
         g: (2 * ((ey - sy) - vy0 * T)) / (T * T),   // …gravity does the rest
       };
+      // The ground trembles as soon as the moon starts coming down,
+      // then harder once it's picked up speed — with a low rumble
+      // underneath that builds all the way to the impact.
+      body.classList.add('is-tremor');
+      sound.tremor();
+      setTimeout(() => { if (moon) body.classList.add('is-tremor-2'); }, 2800);
     }
     if (moon) {
       // Fully erase last frame's moon + halo first — the global trail
@@ -607,6 +613,44 @@
       } catch (_) {}
     }
 
+    // Low sustained ground-shiver for the fall — quiet rumbling that
+    // builds as the moon comes down; stopped by the impact rumble.
+    let tremorNodes = null;
+    function tremor() {
+      if (!ensure()) return;
+      tremorStop();
+      try {
+        const t = ac.currentTime;
+        const g = ac.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.09, t + 0.5);
+        g.gain.exponentialRampToValueAtTime(0.2, t + 5.2);
+        g.connect(master);
+        const n = ac.createBufferSource();
+        n.buffer = noiseBuf;
+        n.loop = true;
+        const f = ac.createBiquadFilter();
+        f.type = 'lowpass';
+        f.frequency.value = 90;
+        n.connect(f);
+        f.connect(g);
+        n.start(t);
+        n.stop(t + 8);   // safety stop if the impact never fires
+        tremorNodes = { n, g };
+      } catch (_) {}
+    }
+    function tremorStop() {
+      if (!tremorNodes || !ac) return;
+      try {
+        const t = ac.currentTime;
+        tremorNodes.g.gain.cancelScheduledValues(t);
+        tremorNodes.g.gain.setValueAtTime(Math.max(0.0001, tremorNodes.g.gain.value), t);
+        tremorNodes.g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+        tremorNodes.n.stop(t + 0.25);
+      } catch (_) {}
+      tremorNodes = null;
+    }
+
     // Deep decaying rumble for the moon's landing — sub sine drop
     // plus low-passed noise, like thunder through the floor.
     function rumble() {
@@ -645,7 +689,7 @@
       } catch (_) {}
     }
 
-    return { resume, launch, boom, rumble };
+    return { resume, launch, boom, rumble, tremor, tremorStop };
   })();
 
   /* ---------- 5) The ceremony sequence ---------- */
@@ -753,8 +797,10 @@
   // a deep rumble rolls through, and debris kicks up from the corner —
   // the cue for the physical stage moon to light.
   function moonImpact() {
+    body.classList.remove('is-tremor', 'is-tremor-2');
     body.classList.add('is-quake');
-    setTimeout(() => body.classList.remove('is-quake'), 1000);
+    setTimeout(() => body.classList.remove('is-quake'), 1100);
+    sound.tremorStop();
     sound.rumble();
     const ix = Math.max(30, W * 0.04);
     for (let i = 0; i < 26; i++) {
